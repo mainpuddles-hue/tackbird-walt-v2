@@ -23,8 +23,9 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { ArrowLeft, LogOut, Trash2, Download, Lock } from 'lucide-react'
+import { ArrowLeft, LogOut, Trash2, Download, Lock, Sun, Moon, Monitor } from 'lucide-react'
 import { toast } from 'sonner'
+import { useTheme } from 'next-themes'
 import type { Profile } from '@/lib/types'
 import Link from 'next/link'
 
@@ -49,6 +50,7 @@ export function SettingsClient({ profile }: SettingsClientProps) {
   const [passwordLoading, setPasswordLoading] = useState(false)
   const router = useRouter()
   const supabase = createClient()
+  const { theme, setTheme } = useTheme()
 
   async function handleSave() {
     setSaving(true)
@@ -198,6 +200,40 @@ export function SettingsClient({ profile }: SettingsClientProps) {
               checked={notifications}
               onCheckedChange={setNotifications}
             />
+          </div>
+
+          {/* Theme */}
+          <div className="space-y-2">
+            <Label>Ulkoasu</Label>
+            <div className="flex gap-2">
+              <Button
+                variant={theme === 'light' ? 'default' : 'outline'}
+                size="sm"
+                className="flex-1"
+                onClick={() => setTheme('light')}
+              >
+                <Sun className="mr-1.5 h-3.5 w-3.5" />
+                Vaalea
+              </Button>
+              <Button
+                variant={theme === 'dark' ? 'default' : 'outline'}
+                size="sm"
+                className="flex-1"
+                onClick={() => setTheme('dark')}
+              >
+                <Moon className="mr-1.5 h-3.5 w-3.5" />
+                Tumma
+              </Button>
+              <Button
+                variant={theme === 'system' ? 'default' : 'outline'}
+                size="sm"
+                className="flex-1"
+                onClick={() => setTheme('system')}
+              >
+                <Monitor className="mr-1.5 h-3.5 w-3.5" />
+                Auto
+              </Button>
+            </div>
           </div>
 
           <Button onClick={handleSave} className="w-full" disabled={saving}>

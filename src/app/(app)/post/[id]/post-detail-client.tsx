@@ -72,6 +72,7 @@ export function PostDetailClient({
   const [bookingStart, setBookingStart] = useState('')
   const [bookingEnd, setBookingEnd] = useState('')
   const [bookingSaving, setBookingSaving] = useState(false)
+  const [lightboxImg, setLightboxImg] = useState<string | null>(null)
   const router = useRouter()
   const supabase = createClient()
   const category = CATEGORIES[post.type as PostType]
@@ -295,7 +296,10 @@ export function PostDetailClient({
 
       {/* Main image */}
       {post.image_url && (
-        <div className="relative aspect-video overflow-hidden bg-muted mx-4 rounded-lg">
+        <button
+          className="relative aspect-video overflow-hidden bg-muted mx-4 rounded-lg block w-[calc(100%-2rem)]"
+          onClick={() => setLightboxImg(post.image_url)}
+        >
           <Image
             src={post.image_url}
             alt={post.title}
@@ -304,16 +308,17 @@ export function PostDetailClient({
             sizes="(max-width: 448px) 100vw, 448px"
             priority
           />
-        </div>
+        </button>
       )}
 
-      {/* Additional images */}
+      {/* Additional images gallery */}
       {post.images && post.images.length > 0 && (
-        <div className="flex gap-2 px-4 overflow-x-auto">
+        <div className="flex gap-2 px-4 overflow-x-auto pb-1">
           {post.images.map((img) => (
-            <div
+            <button
               key={img.id}
               className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-muted"
+              onClick={() => setLightboxImg(img.image_url)}
             >
               <Image
                 src={img.image_url}
@@ -322,8 +327,32 @@ export function PostDetailClient({
                 className="object-cover"
                 sizes="80px"
               />
-            </div>
+            </button>
           ))}
+        </div>
+      )}
+
+      {/* Lightbox */}
+      {lightboxImg && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          onClick={() => setLightboxImg(null)}
+        >
+          <button
+            className="absolute top-4 right-4 text-white/80 hover:text-white text-2xl font-bold"
+            onClick={() => setLightboxImg(null)}
+          >
+            ✕
+          </button>
+          <div className="relative max-h-[85vh] max-w-[90vw] aspect-auto">
+            <Image
+              src={lightboxImg}
+              alt=""
+              width={800}
+              height={600}
+              className="max-h-[85vh] w-auto object-contain rounded-lg"
+            />
+          </div>
         </div>
       )}
 
