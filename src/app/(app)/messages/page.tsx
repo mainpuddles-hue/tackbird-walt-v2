@@ -1,9 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
-import { MessageCircle } from 'lucide-react'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { formatTimeAgo } from '@/lib/format'
-import Link from 'next/link'
+import { MessagesClient } from './messages-client'
 
 export default async function MessagesPage() {
   const supabase = await createClient()
@@ -22,51 +19,31 @@ export default async function MessagesPage() {
     .order('updated_at', { ascending: false })
     .limit(50)
 
-  return (
-    <div className="p-4 space-y-3">
-      <h2 className="text-lg font-semibold">Viestit</h2>
+  // Get last message and unread count for each conversation
+  const enriched = await Promise.all(
+    (conversations ?? []).map(async (conv) => {
+      const { data: lastMsg } = await supabase
+        .from('messages')
+        .select('content, image_url, sender_id, created_at')
+        .eq('conversation_id', conv.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
 
-      {!conversations || conversations.length === 0 ? (
-        <div className="py-16 text-center text-muted-foreground">
-          <MessageCircle className="mx-auto h-10 w-10 mb-2 opacity-50" />
-          <p className="text-lg font-medium">Ei keskusteluja</p>
-          <p className="text-sm mt-1">Viestit ilmestyvät tähän kun aloitat keskustelun</p>
-        </div>
-      ) : (
-        <div className="space-y-1">
-          {conversations.map((conv) => {
-            const otherUser =
-              conv.user1_id === user.id ? conv.user2 : conv.user1
-            return (
-              <Link
-                key={conv.id}
-                href={`/messages/${conv.id}`}
-                className="flex items-center gap-3 rounded-lg p-3 transition-colors hover:bg-muted"
-              >
-                <Avatar className="h-10 w-10">
-                  {otherUser?.avatar_url && (
-                    <AvatarImage
-                      src={otherUser.avatar_url}
-                      alt={otherUser.name}
-                    />
-                  )}
-                  <AvatarFallback>
-                    {otherUser?.name?.charAt(0)?.toUpperCase() ?? '?'}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium text-sm">
-                    {otherUser?.name ?? 'Käyttäjä'}
-                  </p>
-                  <p className="truncate text-xs text-muted-foreground">
-                    {formatTimeAgo(conv.updated_at)}
-                  </p>
-                </div>
-              </Link>
-            )
-          })}
-        </div>
-      )}
-    </div>
+      const { count: unreadCount } = await supabase
+        .from('messages')
+        .select('id', { count: 'exact', head: true })
+        .eq('conversation_id', conv.id)
+        .neq('sender_id', user.id)
+        .eq('is_read', false)
+
+      return {
+        ...conv,
+        last_message: lastMsg,
+        unread_count: unreadCount ?? 0,
+      }
+    })
   )
+
+  return <MessagesClient conversations={enriched} currentUserId={user.id} />
 }

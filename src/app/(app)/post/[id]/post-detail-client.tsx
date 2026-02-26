@@ -34,6 +34,7 @@ import {
   Calendar,
   Pencil,
   Trash2,
+  CreditCard,
 } from 'lucide-react'
 import { CATEGORIES } from '@/lib/constants'
 import { formatTimeAgo, formatPrice, formatResponseRate, formatEventDate } from '@/lib/format'
@@ -67,6 +68,10 @@ export function PostDetailClient({
   const [reviewRating, setReviewRating] = useState(5)
   const [reviewComment, setReviewComment] = useState('')
   const [reviewSaving, setReviewSaving] = useState(false)
+  const [showBookingDialog, setShowBookingDialog] = useState(false)
+  const [bookingStart, setBookingStart] = useState('')
+  const [bookingEnd, setBookingEnd] = useState('')
+  const [bookingSaving, setBookingSaving] = useState(false)
   const router = useRouter()
   const supabase = createClient()
   const category = CATEGORIES[post.type as PostType]
@@ -205,6 +210,54 @@ export function PostDetailClient({
     }
   }
 
+  async function handleBooking() {
+    if (!currentUserId || !bookingStart || !bookingEnd) return
+    const start = new Date(bookingStart)
+    const end = new Date(bookingEnd)
+    if (end <= start) {
+      toast.error('Loppupäivä pitää olla alkupäivän jälkeen')
+      return
+    }
+    const days = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24))
+    const dailyFee = post.daily_fee ?? 0
+    const totalFee = days * dailyFee
+    const commissionRate = 0.10
+    const commission = totalFee * commissionRate
+
+    setBookingSaving(true)
+    try {
+      const { error } = await supabase.from('rental_bookings').insert({
+        post_id: post.id,
+        lender_id: post.user_id,
+        borrower_id: currentUserId,
+        start_date: bookingStart,
+        end_date: bookingEnd,
+        days,
+        daily_fee: dailyFee,
+        total_fee: totalFee,
+        platform_commission: commission,
+        platform_commission_rate: commissionRate,
+        status: 'pending',
+      })
+      if (error) {
+        if (error.code === '23505') {
+          toast.error('Sinulla on jo varaus tähän ilmoitukseen')
+        } else {
+          throw error
+        }
+      } else {
+        toast.success('Varaus lähetetty! Odota lainaajan vahvistusta.')
+        setShowBookingDialog(false)
+        setBookingStart('')
+        setBookingEnd('')
+      }
+    } catch {
+      toast.error('Varaus epäonnistui')
+    } finally {
+      setBookingSaving(false)
+    }
+  }
+
   return (
     <div className="space-y-4 pb-8">
       {/* Header */}
@@ -293,15 +346,27 @@ export function PostDetailClient({
 
         <p className="text-sm leading-relaxed whitespace-pre-wrap">{post.description}</p>
 
-        {/* Price */}
+        {/* Price + Booking */}
         {post.daily_fee != null && (
           <Card>
-            <CardContent className="flex items-center gap-3 p-3">
-              <Coins className="h-5 w-5 text-amber-500" />
-              <div>
-                <p className="font-semibold">{formatPrice(post.daily_fee)} / päivä</p>
-                <p className="text-xs text-muted-foreground">Lainausmaksu</p>
+            <CardContent className="p-3">
+              <div className="flex items-center gap-3">
+                <Coins className="h-5 w-5 text-amber-500" />
+                <div className="flex-1">
+                  <p className="font-semibold">{formatPrice(post.daily_fee)} / päivä</p>
+                  <p className="text-xs text-muted-foreground">Lainausmaksu</p>
+                </div>
               </div>
+              {!isOwn && currentUserId && (
+                <Button
+                  className="w-full mt-3"
+                  variant="outline"
+                  onClick={() => setShowBookingDialog(true)}
+                >
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Varaa ja maksa
+                </Button>
+              )}
             </CardContent>
           </Card>
         )}
@@ -514,6 +579,75 @@ export function PostDetailClient({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Booking dialog */}
+      {post.daily_fee != null && (
+        <Dialog open={showBookingDialog} onOpenChange={setShowBookingDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Varaa lainaus</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>Alkupäivä</Label>
+                <Input
+                  type="date"
+                  value={bookingStart}
+                  onChange={(e) => setBookingStart(e.target.value)}
+                  min={new Date().toISOString().split('T')[0]}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Loppupäivä</Label>
+                <Input
+                  type="date"
+                  value={bookingEnd}
+                  onChange={(e) => setBookingEnd(e.target.value)}
+                  min={bookingStart || new Date().toISOString().split('T')[0]}
+                />
+              </div>
+              {bookingStart && bookingEnd && new Date(bookingEnd) > new Date(bookingStart) && (
+                <Card>
+                  <CardContent className="p-3 space-y-1.5 text-sm">
+                    {(() => {
+                      const days = Math.ceil(
+                        (new Date(bookingEnd).getTime() - new Date(bookingStart).getTime()) /
+                          (1000 * 60 * 60 * 24)
+                      )
+                      const total = days * (post.daily_fee ?? 0)
+                      const commission = total * 0.1
+                      return (
+                        <>
+                          <div className="flex justify-between">
+                            <span>{days} pv × {formatPrice(post.daily_fee ?? 0)}</span>
+                            <span className="font-medium">{formatPrice(total)}</span>
+                          </div>
+                          <div className="flex justify-between text-muted-foreground text-xs">
+                            <span>Palvelumaksu (10%)</span>
+                            <span>{formatPrice(commission)}</span>
+                          </div>
+                          <Separator />
+                          <div className="flex justify-between font-semibold">
+                            <span>Yhteensä</span>
+                            <span>{formatPrice(total + commission)}</span>
+                          </div>
+                        </>
+                      )
+                    })()}
+                  </CardContent>
+                </Card>
+              )}
+              <Button
+                className="w-full"
+                onClick={handleBooking}
+                disabled={bookingSaving || !bookingStart || !bookingEnd}
+              >
+                {bookingSaving ? 'Varataan...' : 'Lähetä varaus'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Edit dialog */}
       <Dialog open={editing} onOpenChange={setEditing}>
