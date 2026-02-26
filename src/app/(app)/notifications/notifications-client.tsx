@@ -11,6 +11,25 @@ import { cn } from '@/lib/utils'
 import Link from 'next/link'
 import type { Notification } from '@/lib/types'
 
+type NotificationFilter = 'all' | 'messages' | 'reviews' | 'rentals' | 'system'
+
+const NOTIFICATION_FILTERS: { key: NotificationFilter; label: string }[] = [
+  { key: 'all', label: 'Kaikki' },
+  { key: 'messages', label: 'Viestit' },
+  { key: 'reviews', label: 'Arvostelut' },
+  { key: 'rentals', label: 'Lainaukset' },
+  { key: 'system', label: 'Järjestelmä' },
+]
+
+function matchesFilter(type: string, filter: NotificationFilter): boolean {
+  if (filter === 'all') return true
+  if (filter === 'messages') return type.includes('message')
+  if (filter === 'reviews') return type.includes('review')
+  if (filter === 'rentals') return type.includes('rental')
+  // "system" = everything else
+  return !type.includes('message') && !type.includes('review') && !type.includes('rental')
+}
+
 interface NotificationsClientProps {
   notifications: Notification[]
 }
@@ -19,8 +38,13 @@ export function NotificationsClient({
   notifications: initialNotifications,
 }: NotificationsClientProps) {
   const [notifications, setNotifications] = useState(initialNotifications)
+  const [filter, setFilter] = useState<NotificationFilter>('all')
   const router = useRouter()
   const supabase = createClient()
+
+  const filteredNotifications = notifications.filter((n) =>
+    matchesFilter(n.type, filter)
+  )
 
   async function markAllRead() {
     const unreadIds = notifications.filter((n) => !n.is_read).map((n) => n.id)
@@ -80,7 +104,25 @@ export function NotificationsClient({
         )}
       </div>
 
-      {notifications.length === 0 ? (
+      {/* Filter chips */}
+      <div className="flex gap-2 overflow-x-auto">
+        {NOTIFICATION_FILTERS.map((f) => (
+          <button
+            key={f.key}
+            onClick={() => setFilter(f.key)}
+            className={cn(
+              'shrink-0 rounded-full px-4 py-1.5 text-xs font-semibold border transition-colors',
+              filter === f.key
+                ? 'border-primary bg-primary text-primary-foreground'
+                : 'border-border bg-card text-muted-foreground hover:bg-muted'
+            )}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
+
+      {filteredNotifications.length === 0 ? (
         <div className="py-16 text-center text-muted-foreground">
           <Bell className="mx-auto h-10 w-10 mb-2 opacity-50" />
           <p className="text-lg font-medium">Ei ilmoituksia</p>
@@ -88,7 +130,7 @@ export function NotificationsClient({
         </div>
       ) : (
         <div className="space-y-1">
-          {notifications.map((notification) => (
+          {filteredNotifications.map((notification) => (
             <button
               key={notification.id}
               onClick={() => handleClick(notification)}

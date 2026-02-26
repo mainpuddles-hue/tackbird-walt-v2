@@ -23,9 +23,10 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { ArrowLeft, LogOut, Trash2, Download, Lock, Sun, Moon, Monitor } from 'lucide-react'
+import { ArrowLeft, LogOut, Trash2, Download, Lock, Sun, Moon, Monitor, Crown } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTheme } from 'next-themes'
+import { ProUpgradeModal } from '@/components/pro-upgrade-modal'
 import type { Profile } from '@/lib/types'
 import Link from 'next/link'
 
@@ -48,6 +49,7 @@ export function SettingsClient({ profile }: SettingsClientProps) {
   const [showPasswordDialog, setShowPasswordDialog] = useState(false)
   const [newPassword, setNewPassword] = useState('')
   const [passwordLoading, setPasswordLoading] = useState(false)
+  const [showProModal, setShowProModal] = useState(false)
   const router = useRouter()
   const supabase = createClient()
   const { theme, setTheme } = useTheme()
@@ -244,6 +246,48 @@ export function SettingsClient({ profile }: SettingsClientProps) {
 
       <Separator />
 
+      {/* Pro subscription */}
+      <Card>
+        <CardContent className="p-4 space-y-3">
+          {profile?.is_pro ? (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+                  <Crown className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-sm font-semibold">TackBird Pro</h3>
+                  {profile.pro_expires_at && (
+                    <p className="text-xs text-muted-foreground">
+                      Voimassa{' '}
+                      {new Date(profile.pro_expires_at).toLocaleDateString('fi-FI')} asti
+                    </p>
+                  )}
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => toast.info('Tilauksen peruutus tulossa pian!')}
+              >
+                Peruuta tilaus
+              </Button>
+            </div>
+          ) : (
+            <Button
+              variant="outline"
+              className="w-full justify-start"
+              onClick={() => setShowProModal(true)}
+            >
+              <Crown className="mr-2 h-4 w-4 text-amber-500" />
+              Päivitä TackBird Pro:ksi
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
+      <Separator />
+
       {/* Security */}
       <Card>
         <CardContent className="p-4 space-y-3">
@@ -354,6 +398,8 @@ export function SettingsClient({ profile }: SettingsClientProps) {
           </div>
         </DialogContent>
       </Dialog>
+
+      <ProUpgradeModal open={showProModal} onOpenChange={setShowProModal} />
     </div>
   )
 }
