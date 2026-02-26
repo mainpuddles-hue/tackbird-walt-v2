@@ -106,6 +106,14 @@ export function ProfileClient({
     }
     setAvatarUploading(true)
     try {
+      // Delete old avatar from storage to prevent orphaned files
+      if (profile.avatar_url) {
+        const oldPath = profile.avatar_url.split('/avatars/')[1]
+        if (oldPath) {
+          await supabase.storage.from('avatars').remove([decodeURIComponent(oldPath)])
+        }
+      }
+
       const optimized = await optimizeAvatar(file)
       const ext = optimized.name.split('.').pop()
       const path = `${profile.id}/${Date.now()}.${ext}`

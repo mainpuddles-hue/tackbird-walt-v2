@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { COMMISSION_RATE, COMMISSION_RATE_PRO } from '@/lib/stripe'
 import { rentalLimiter, getClientIp, rateLimitResponse } from '@/lib/rate-limit'
+import { sendBookingRequest } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   const ip = getClientIp(request)
@@ -121,6 +122,24 @@ export async function POST(request: NextRequest) {
       link_type: 'rental',
       link_id: booking.id,
     })
+
+    // Send email notification to lender
+    const { data: lenderProfile } = await admin
+      .from('profiles')
+      .select('name')
+      .eq('id', user.id)
+      .single()
+
+    const { data: lenderAuth } = await admin.auth.admin.getUserById(post.user_id)
+    if (lenderAuth?.user?.email) {
+      sendBookingRequest(lenderAuth.user.email, {
+        postTitle: post.title,
+        borrowerName: lenderProfile?.name || 'Käyttäjä',
+        startDate: start_date,
+        endDate: end_date,
+        totalFee,
+      }).catch((err) => console.error('[rentals/book] Email failed:', err))
+    }
 
     return NextResponse.json({ ok: true, booking })
   } catch (err) {

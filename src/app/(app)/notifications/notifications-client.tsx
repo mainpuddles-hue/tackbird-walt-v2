@@ -39,6 +39,8 @@ export function NotificationsClient({
 }: NotificationsClientProps) {
   const [notifications, setNotifications] = useState(initialNotifications)
   const [filter, setFilter] = useState<NotificationFilter>('all')
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [hasMore, setHasMore] = useState(initialNotifications.length >= 50)
   const router = useRouter()
   const supabase = createClient()
 
@@ -58,6 +60,21 @@ export function NotificationsClient({
     setNotifications((prev) =>
       prev.map((n) => ({ ...n, is_read: true }))
     )
+  }
+
+  async function loadMore() {
+    setLoadingMore(true)
+    try {
+      const res = await fetch(`/api/notifications?limit=20&offset=${notifications.length}`)
+      if (!res.ok) throw new Error()
+      const data = await res.json()
+      setNotifications((prev) => [...prev, ...data.notifications])
+      setHasMore(data.hasMore)
+    } catch {
+      // Silently fail — user can retry
+    } finally {
+      setLoadingMore(false)
+    }
   }
 
   async function handleClick(notification: Notification) {
@@ -168,6 +185,19 @@ export function NotificationsClient({
               )}
             </button>
           ))}
+          {hasMore && filter === 'all' && (
+            <div className="pt-2 text-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="text-xs"
+              >
+                {loadingMore ? 'Ladataan...' : 'Lataa lisää'}
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -261,6 +261,50 @@ export async function sendBookingCancellation(
 }
 
 /**
+ * Booking request notification email sent to the lender.
+ */
+export async function sendBookingRequest(
+  email: string,
+  data: {
+    postTitle: string
+    borrowerName: string
+    startDate: string
+    endDate: string
+    totalFee: number
+  }
+): Promise<boolean> {
+  const body = `
+    <h2 style="margin:0 0 16px;font-size:20px;">Uusi lainausvaraus</h2>
+    <p><strong>${data.borrowerName}</strong> haluaa lainata kohdettasi:</p>
+    <table style="width:100%;border-collapse:collapse;margin:16px 0 20px;">
+      <tr>
+        <td style="padding:8px 0;border-bottom:1px solid #e4e4e7;color:#71717a;">Kohde</td>
+        <td style="padding:8px 0;border-bottom:1px solid #e4e4e7;font-weight:600;">${data.postTitle}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;border-bottom:1px solid #e4e4e7;color:#71717a;">Alkup&auml;iv&auml;</td>
+        <td style="padding:8px 0;border-bottom:1px solid #e4e4e7;">${data.startDate}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;border-bottom:1px solid #e4e4e7;color:#71717a;">Loppup&auml;iv&auml;</td>
+        <td style="padding:8px 0;border-bottom:1px solid #e4e4e7;">${data.endDate}</td>
+      </tr>
+      <tr>
+        <td style="padding:8px 0;color:#71717a;">Yhteens&auml;</td>
+        <td style="padding:8px 0;font-weight:700;font-size:18px;">${data.totalFee.toFixed(2)}&nbsp;&euro;</td>
+      </tr>
+    </table>
+    <p>Vahvista tai hylk&auml;&auml; varaus sovelluksessa.</p>
+    <p style="margin-top:24px;">
+      <a href="${APP_URL}" style="display:inline-block;padding:12px 28px;background:${BRAND_COLOR};color:#fff;border-radius:8px;text-decoration:none;font-weight:600;">
+        Avaa ${APP_NAME}
+      </a>
+    </p>
+  `
+  return sendEmail(email, `Uusi lainausvaraus: ${data.postTitle}`, wrapHtml('Uusi lainausvaraus', body))
+}
+
+/**
  * New message notification email. Intended to be throttled (max 1 per conversation per hour).
  */
 export async function sendNewMessageEmail(

@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { PasswordStrength, isPasswordValid } from '@/components/password-strength'
-import { ArrowLeft, LogOut, Trash2, Download, Lock, Sun, Moon, Monitor, Crown, ShieldOff, Bookmark, Bell, Building2 } from 'lucide-react'
+import { ArrowLeft, LogOut, Trash2, Download, Lock, Sun, Moon, Monitor, Crown, ShieldOff, Bookmark, Bell, Building2, MapPin } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTheme } from 'next-themes'
 import { ProUpgradeModal } from '@/components/pro-upgrade-modal'
@@ -32,6 +32,7 @@ import { AdDashboard } from '@/components/ad-dashboard'
 import { usePushNotifications } from '@/hooks/use-push-notifications'
 import { useI18n } from '@/lib/i18n'
 import type { Locale } from '@/lib/i18n'
+import { NEIGHBORHOODS } from '@/lib/constants'
 import type { Profile } from '@/lib/types'
 import Link from 'next/link'
 
@@ -46,6 +47,9 @@ export function SettingsClient({ profile }: SettingsClientProps) {
     profile?.profile_visibility ?? 'neighbors'
   )
   const [language, setLanguage] = useState<string>(locale)
+  const [neighborhood, setNeighborhood] = useState<string>(
+    profile?.naapurusto ?? ''
+  )
   const [notifications, setNotifications] = useState(
     profile?.notifications_enabled ?? true
   )
@@ -88,6 +92,7 @@ export function SettingsClient({ profile }: SettingsClientProps) {
         .from('profiles')
         .update({
           profile_visibility: visibility,
+          naapurusto: neighborhood || null,
           language,
           notifications_enabled: notifications,
         })
@@ -231,6 +236,24 @@ export function SettingsClient({ profile }: SettingsClientProps) {
                 <SelectItem value="everyone">{t('settings.visibilityEveryone')}</SelectItem>
                 <SelectItem value="neighbors">{t('settings.visibilityNeighbors')}</SelectItem>
                 <SelectItem value="hidden">{t('settings.visibilityHidden')}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Neighborhood */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1.5">
+              <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
+              Naapurusto
+            </Label>
+            <Select value={neighborhood} onValueChange={setNeighborhood}>
+              <SelectTrigger>
+                <SelectValue placeholder="Valitse naapurusto" />
+              </SelectTrigger>
+              <SelectContent>
+                {NEIGHBORHOODS.map((n) => (
+                  <SelectItem key={n} value={n}>{n}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
