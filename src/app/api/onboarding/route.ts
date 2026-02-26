@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { NextResponse, type NextRequest } from 'next/server'
+import { sendWelcomeEmail } from '@/lib/email'
 
 export async function POST(request: NextRequest) {
   try {
@@ -60,6 +61,13 @@ export async function POST(request: NextRequest) {
       if (error) {
         console.error('Onboarding save error:', error)
         return NextResponse.json({ error: 'Failed to save profile' }, { status: 500 })
+      }
+
+      // Fire-and-forget welcome email (don't block the response)
+      if (user.email) {
+        sendWelcomeEmail(user.email, name || 'Käyttäjä').catch((err) =>
+          console.error('[onboarding] Welcome email failed:', err)
+        )
       }
     }
 
