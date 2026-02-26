@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { PasswordStrength, isPasswordValid } from '@/components/password-strength'
 import { toast } from 'sonner'
 
 export default function ResetPasswordPage() {
@@ -13,11 +14,8 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false)
   const router = useRouter()
 
-  const hasMinLength = password.length >= 8
-  const hasUpperCase = /[A-Z]/.test(password)
-  const hasNumber = /[0-9]/.test(password)
   const passwordsMatch = password === confirmPassword && password.length > 0
-  const isValid = hasMinLength && hasUpperCase && hasNumber && passwordsMatch
+  const isValid = isPasswordValid(password) && passwordsMatch
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -69,19 +67,7 @@ export default function ResetPasswordPage() {
               minLength={8}
               required
             />
-            {password.length > 0 && (
-              <div className="space-y-1 text-xs">
-                <p className={hasMinLength ? 'text-green-600' : 'text-muted-foreground'}>
-                  {hasMinLength ? '\u2713' : '\u25CB'} Vähintään 8 merkkiä
-                </p>
-                <p className={hasUpperCase ? 'text-green-600' : 'text-muted-foreground'}>
-                  {hasUpperCase ? '\u2713' : '\u25CB'} Iso kirjain
-                </p>
-                <p className={hasNumber ? 'text-green-600' : 'text-muted-foreground'}>
-                  {hasNumber ? '\u2713' : '\u25CB'} Numero
-                </p>
-              </div>
-            )}
+            <PasswordStrength password={password} />
           </div>
 
           <div className="space-y-2">

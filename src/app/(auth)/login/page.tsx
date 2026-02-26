@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { PasswordStrength, isPasswordValid } from '@/components/password-strength'
 import { toast } from 'sonner'
 
 export default function LoginPage() {
@@ -252,21 +253,9 @@ export default function LoginPage() {
               minLength={8}
               required
             />
-            {isRegister && password.length > 0 && (
-              <div className="space-y-1 text-xs">
-                <p className={password.length >= 8 ? 'text-green-600' : 'text-muted-foreground'}>
-                  {password.length >= 8 ? '\u2713' : '\u25CB'} Vähintään 8 merkkiä
-                </p>
-                <p className={/[A-Z]/.test(password) ? 'text-green-600' : 'text-muted-foreground'}>
-                  {/[A-Z]/.test(password) ? '\u2713' : '\u25CB'} Iso kirjain
-                </p>
-                <p className={/[0-9]/.test(password) ? 'text-green-600' : 'text-muted-foreground'}>
-                  {/[0-9]/.test(password) ? '\u2713' : '\u25CB'} Numero
-                </p>
-              </div>
-            )}
+            {isRegister && <PasswordStrength password={password} />}
           </div>
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button type="submit" className="w-full" disabled={loading || (isRegister && !isPasswordValid(password))}>
             {loading
               ? 'Ladataan...'
               : isRegister

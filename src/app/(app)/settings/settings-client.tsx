@@ -23,6 +23,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
+import { PasswordStrength, isPasswordValid } from '@/components/password-strength'
 import { ArrowLeft, LogOut, Trash2, Download, Lock, Sun, Moon, Monitor, Crown, ShieldOff, Bookmark, Bell, Building2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTheme } from 'next-themes'
@@ -557,11 +558,12 @@ export function SettingsClient({ profile }: SettingsClientProps) {
                 placeholder={t('settings.newPasswordPlaceholder')}
                 minLength={8}
               />
+              <PasswordStrength password={newPassword} />
             </div>
             <Button
               className="w-full"
               onClick={handlePasswordChange}
-              disabled={passwordLoading || newPassword.length < 8}
+              disabled={passwordLoading || !isPasswordValid(newPassword)}
             >
               {passwordLoading ? t('settings.changingPassword') : t('settings.changePassword')}
             </Button>
