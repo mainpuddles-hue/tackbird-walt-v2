@@ -26,11 +26,15 @@ import {
   Bookmark,
   Loader2,
   Shield,
+  Package,
+  CheckCircle,
+  XCircle,
+  Clock,
 } from 'lucide-react'
 import { BADGES, CATEGORIES } from '@/lib/constants'
-import { formatResponseRate, formatTimeAgo } from '@/lib/format'
+import { formatResponseRate, formatTimeAgo, formatPrice } from '@/lib/format'
 import { toast } from 'sonner'
-import type { Profile, Review, PostType } from '@/lib/types'
+import type { Profile, Review, PostType, RentalBooking } from '@/lib/types'
 import Link from 'next/link'
 
 interface ProfileClientProps {
@@ -41,6 +45,7 @@ interface ProfileClientProps {
   reviews: Review[]
   posts: { id: string; type: string; title: string; created_at: string }[]
   savedPosts: unknown[]
+  rentals: RentalBooking[]
 }
 
 export function ProfileClient({
@@ -51,6 +56,7 @@ export function ProfileClient({
   reviews,
   posts,
   savedPosts,
+  rentals,
 }: ProfileClientProps) {
   const [editingBio, setEditingBio] = useState(false)
   const [bioText, setBioText] = useState(profile?.bio ?? '')
@@ -341,6 +347,108 @@ export function ProfileClient({
           </div>
         )}
       </div>
+
+      {/* Rental bookings */}
+      {rentals.length > 0 && (
+        <div>
+          <h3 className="text-sm font-semibold mb-2 flex items-center gap-1.5">
+            <Package className="h-3.5 w-3.5 text-amber-500" />
+            Lainaukset ({rentals.length})
+          </h3>
+          <div className="space-y-2">
+            {rentals.map((r) => {
+              const isLender = r.lender_id === profile.id
+              const otherUser = isLender ? r.borrower : r.lender
+              const statusConfig: Record<string, { label: string; icon: typeof CheckCircle; className: string }> = {
+                pending: { label: 'Odottaa', icon: Clock, className: 'text-amber-600 bg-amber-50' },
+                confirmed: { label: 'Vahvistettu', icon: CheckCircle, className: 'text-green-600 bg-green-50' },
+                paid: { label: 'Maksettu', icon: CheckCircle, className: 'text-blue-600 bg-blue-50' },
+                completed: { label: 'Valmis', icon: CheckCircle, className: 'text-muted-foreground bg-muted' },
+                cancelled: { label: 'Peruttu', icon: XCircle, className: 'text-red-600 bg-red-50' },
+              }
+              const status = statusConfig[r.status] ?? statusConfig.pending
+
+              return (
+                <Card key={r.id}>
+                  <CardContent className="p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium truncate flex-1">
+                        {r.post?.title ?? 'Poistettu ilmoitus'}
+                      </span>
+                      <Badge variant="secondary" className={`text-[10px] ml-2 ${status.className}`}>
+                        {status.label}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>{isLender ? 'Lainaaja' : 'Lainaajalta'}:</span>
+                      <Link href={`/profile/${otherUser?.id}`} className="font-medium hover:underline">
+                        {otherUser?.name}
+                      </Link>
+                      <span>·</span>
+                      <span>{r.days} pv</span>
+                      <span>·</span>
+                      <span className="font-medium text-foreground">{formatPrice(r.total_fee)}</span>
+                    </div>
+                    {isLender && r.status === 'pending' && (
+                      <div className="flex gap-2 mt-2">
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="flex-1 h-7 text-xs"
+                          onClick={async () => {
+                            const { error } = await supabase
+                              .from('rental_bookings')
+                              .update({ status: 'confirmed' })
+                              .eq('id', r.id)
+                            if (error) toast.error('Toiminto epäonnistui')
+                            else { toast.success('Varaus vahvistettu'); router.refresh() }
+                          }}
+                        >
+                          <CheckCircle className="mr-1 h-3 w-3" />
+                          Vahvista
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="flex-1 h-7 text-xs text-destructive"
+                          onClick={async () => {
+                            const { error } = await supabase
+                              .from('rental_bookings')
+                              .update({ status: 'cancelled', cancelled_at: new Date().toISOString() })
+                              .eq('id', r.id)
+                            if (error) toast.error('Toiminto epäonnistui')
+                            else { toast.success('Varaus peruttu'); router.refresh() }
+                          }}
+                        >
+                          <XCircle className="mr-1 h-3 w-3" />
+                          Hylkää
+                        </Button>
+                      </div>
+                    )}
+                    {isLender && r.status === 'confirmed' && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full mt-2 h-7 text-xs"
+                        onClick={async () => {
+                          const { error } = await supabase
+                            .from('rental_bookings')
+                            .update({ status: 'completed', completed_at: new Date().toISOString() })
+                            .eq('id', r.id)
+                          if (error) toast.error('Toiminto epäonnistui')
+                          else { toast.success('Lainaus merkitty palautetuksi'); router.refresh() }
+                        }}
+                      >
+                        Merkitse palautetuksi
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Actions */}
       <div className="space-y-2">

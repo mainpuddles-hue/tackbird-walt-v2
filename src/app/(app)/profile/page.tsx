@@ -53,6 +53,19 @@ export default async function ProfilePage() {
 
   const savedPosts = savedRaw?.map((s) => s.posts).filter(Boolean) ?? []
 
+  // Rental bookings (as lender or borrower)
+  const { data: rentals } = await supabase
+    .from('rental_bookings')
+    .select(`
+      *,
+      post:posts(id, title, type),
+      lender:profiles!rental_bookings_lender_id_fkey(id, name, avatar_url),
+      borrower:profiles!rental_bookings_borrower_id_fkey(id, name, avatar_url)
+    `)
+    .or(`lender_id.eq.${user.id},borrower_id.eq.${user.id}`)
+    .order('created_at', { ascending: false })
+    .limit(20)
+
   return (
     <ProfileClient
       profile={profile}
@@ -62,6 +75,7 @@ export default async function ProfilePage() {
       reviews={reviews ?? []}
       posts={posts ?? []}
       savedPosts={savedPosts}
+      rentals={rentals ?? []}
     />
   )
 }
