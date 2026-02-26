@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { ArrowLeft, Send, ImageIcon, X } from 'lucide-react'
+import { ArrowLeft, Send, ImageIcon, X, Trash2 } from 'lucide-react'
 import { formatTimeAgo } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -30,6 +30,8 @@ export function ConversationClient({
   const [messages, setMessages] = useState(initialMessages)
   const [newMessage, setNewMessage] = useState('')
   const [sending, setSending] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -154,6 +156,33 @@ export function ConversationClient({
     }
   }
 
+  async function handleDeleteConversation() {
+    setDeleting(true)
+    try {
+      // Delete all messages first
+      const { error: msgError } = await supabase
+        .from('messages')
+        .delete()
+        .eq('conversation_id', conversationId)
+      if (msgError) throw msgError
+
+      // Delete the conversation
+      const { error: convError } = await supabase
+        .from('conversations')
+        .delete()
+        .eq('id', conversationId)
+      if (convError) throw convError
+
+      toast.success('Keskustelu poistettu')
+      router.push('/messages')
+    } catch {
+      toast.error('Keskustelun poistaminen epäonnistui')
+    } finally {
+      setDeleting(false)
+      setShowDeleteConfirm(false)
+    }
+  }
+
   return (
     <div className="flex flex-col h-[calc(100dvh-3.5rem)]">
       {/* Header */}
@@ -179,7 +208,40 @@ export function ConversationClient({
             {otherUser?.name ?? 'Käyttäjä'}
           </span>
         </Link>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-8 w-8 text-muted-foreground hover:text-destructive"
+          onClick={() => setShowDeleteConfirm(true)}
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
       </div>
+
+      {/* Delete confirmation banner */}
+      {showDeleteConfirm && (
+        <div className="flex items-center justify-between border-b bg-destructive/5 px-4 py-2">
+          <span className="text-sm font-medium">Poista keskustelu?</span>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="destructive"
+              size="sm"
+              disabled={deleting}
+              onClick={handleDeleteConversation}
+            >
+              {deleting ? 'Poistetaan...' : 'Poista'}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={deleting}
+              onClick={() => setShowDeleteConfirm(false)}
+            >
+              Peruuta
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-3">

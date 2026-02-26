@@ -4,10 +4,20 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { PostCard } from '@/components/post-card'
+import { AdCard } from '@/components/ad-card'
 import { FilterBar } from '@/components/filter-bar'
 import { Loader2, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import type { Post, PostType } from '@/lib/types'
+
+interface AdData {
+  id: string
+  title: string
+  description: string
+  image_url: string | null
+  link_url: string | null
+  cta_text: string
+}
 
 interface FeedClientProps {
   initialPosts: Post[]
@@ -21,9 +31,74 @@ export function FeedClient({ initialPosts }: FeedClientProps) {
   const [loading, setLoading] = useState(false)
   const [hasMore, setHasMore] = useState(initialPosts.length >= PAGE_SIZE)
   const [hasNewPosts, setHasNewPosts] = useState(false)
+  const [ads, setAds] = useState<AdData[]>([])
   const observerRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const supabase = createClient()
+
+  // Fetch active ads
+  useEffect(() => {
+    async function fetchAds() {
+      const today = new Date().toISOString().split('T')[0]
+      const { data } = await supabase
+        .from('advertisements')
+        .select('id, title, description, image_url, link_url, cta_text')
+        .eq('status', 'active')
+        .lte('start_date', today)
+        .gte('end_date', today)
+        .limit(5)
+      if (data) setAds(data)
+    }
+    fetchAds()
+  }, [supabase])
+
+  const handleAdImpression = useCallback(
+    async (adId: string) => {
+      const today = new Date().toISOString().split('T')[0]
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { error } = await supabase.from('ad_impressions').insert({
+        ad_id: adId,
+        user_id: user.id,
+        date: today,
+      })
+      // Only increment if insertion succeeded (not a duplicate)
+      if (!error) {
+        const { data: adData } = await supabase
+          .from('advertisements')
+          .select('impressions')
+          .eq('id', adId)
+          .single()
+        if (adData) {
+          await supabase
+            .from('advertisements')
+            .update({ impressions: adData.impressions + 1 })
+            .eq('id', adId)
+        }
+      }
+    },
+    [supabase]
+  )
+
+  const handleAdClick = useCallback(
+    async (adId: string) => {
+      const { data } = await supabase
+        .from('advertisements')
+        .select('clicks')
+        .eq('id', adId)
+        .single()
+      if (data) {
+        await supabase
+          .from('advertisements')
+          .update({ clicks: data.clicks + 1 })
+          .eq('id', adId)
+      }
+    },
+    [supabase]
+  )
 
   const filteredPosts = activeFilter
     ? posts.filter((p) => p.type === activeFilter)
@@ -174,8 +249,22 @@ export function FeedClient({ initialPosts }: FeedClientProps) {
         </div>
       ) : (
         <div className="space-y-3">
-          {filteredPosts.map((post) => (
-            <PostCard key={post.id} post={post} />
+          {filteredPosts.map((post, index) => (
+            <div key={post.id}>
+              <PostCard post={post} />
+              {/* Interleave ad after every 5th post */}
+              {ads.length > 0 &&
+                (index + 1) % 5 === 0 &&
+                ads[Math.floor(index / 5) % ads.length] && (
+                  <div className="mt-3">
+                    <AdCard
+                      ad={ads[Math.floor(index / 5) % ads.length]}
+                      onImpression={handleAdImpression}
+                      onClick={handleAdClick}
+                    />
+                  </div>
+                )}
+            </div>
           ))}
         </div>
       )}
