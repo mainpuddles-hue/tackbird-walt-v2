@@ -11,6 +11,7 @@ import { toast } from 'sonner'
 
 export default function LoginPage() {
   const [isRegister, setIsRegister] = useState(false)
+  const [forgotPassword, setForgotPassword] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
@@ -19,19 +20,26 @@ export default function LoginPage() {
   const router = useRouter()
   const supabase = createClient()
 
-  async function handlePasswordReset() {
+  async function handleForgotPassword(e: React.FormEvent) {
+    e.preventDefault()
     if (!email) {
-      toast.error('Syötä sähköpostiosoitteesi ensin')
+      toast.error('Syötä sähköpostiosoitteesi')
       return
     }
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback`,
-    })
-    if (error) {
-      toast.error('Salasanan nollaus epäonnistui')
-    } else {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      })
+      if (!res.ok) throw new Error()
       setResetSent(true)
-      toast.success('Nollauslinkki lähetetty sähköpostiisi')
+    } catch {
+      // Always show success for security (don't reveal if email exists)
+      setResetSent(true)
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -75,6 +83,82 @@ export default function LoginPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Forgot password view
+  if (forgotPassword) {
+    return (
+      <div className="flex min-h-dvh flex-col items-center justify-center p-6">
+        <div className="w-full max-w-sm space-y-6">
+          <div className="flex flex-col items-center gap-2">
+            <svg
+              width="48"
+              height="48"
+              viewBox="0 0 32 32"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              className="text-primary"
+            >
+              <circle cx="16" cy="12" r="8" fill="currentColor" opacity="0.15" />
+              <circle cx="16" cy="12" r="4" fill="currentColor" />
+              <line x1="16" y1="16" x2="16" y2="28" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
+            </svg>
+            <h1 className="text-2xl font-bold">Salasanan nollaus</h1>
+            <p className="text-sm text-muted-foreground text-center">
+              Syötä sähköpostiosoitteesi ja lähetämme sinulle nollauslinkin.
+            </p>
+          </div>
+
+          {resetSent ? (
+            <div className="space-y-4">
+              <div className="rounded-lg border bg-muted/50 p-4 text-center">
+                <p className="text-sm font-medium">Nollauslinkki lähetetty sähköpostiisi</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Tarkista sähköpostisi ja seuraa linkkiä salasanan vaihtamiseksi.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setForgotPassword(false)
+                  setResetSent(false)
+                }}
+                className="w-full text-center text-sm font-medium text-primary underline-offset-4 hover:underline"
+              >
+                Takaisin kirjautumiseen
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleForgotPassword} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="reset-email">Sähköposti</Label>
+                <Input
+                  id="reset-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="nimi@esimerkki.fi"
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? 'Lähetetään...' : 'Lähetä nollauslinkki'}
+              </Button>
+              <button
+                type="button"
+                onClick={() => {
+                  setForgotPassword(false)
+                  setResetSent(false)
+                }}
+                className="w-full text-center text-sm font-medium text-primary underline-offset-4 hover:underline"
+              >
+                Takaisin kirjautumiseen
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -171,13 +255,13 @@ export default function LoginPage() {
             {isRegister && password.length > 0 && (
               <div className="space-y-1 text-xs">
                 <p className={password.length >= 8 ? 'text-green-600' : 'text-muted-foreground'}>
-                  {password.length >= 8 ? '✓' : '○'} Vähintään 8 merkkiä
+                  {password.length >= 8 ? '\u2713' : '\u25CB'} Vähintään 8 merkkiä
                 </p>
                 <p className={/[A-Z]/.test(password) ? 'text-green-600' : 'text-muted-foreground'}>
-                  {/[A-Z]/.test(password) ? '✓' : '○'} Iso kirjain
+                  {/[A-Z]/.test(password) ? '\u2713' : '\u25CB'} Iso kirjain
                 </p>
                 <p className={/[0-9]/.test(password) ? 'text-green-600' : 'text-muted-foreground'}>
-                  {/[0-9]/.test(password) ? '✓' : '○'} Numero
+                  {/[0-9]/.test(password) ? '\u2713' : '\u25CB'} Numero
                 </p>
               </div>
             )}
@@ -192,10 +276,10 @@ export default function LoginPage() {
           {!isRegister && (
             <button
               type="button"
-              onClick={handlePasswordReset}
+              onClick={() => setForgotPassword(true)}
               className="w-full text-center text-xs text-muted-foreground hover:text-primary"
             >
-              {resetSent ? 'Linkki lähetetty!' : 'Unohditko salasanasi?'}
+              Unohditko salasanasi?
             </button>
           )}
         </form>

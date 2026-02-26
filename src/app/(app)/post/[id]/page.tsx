@@ -36,6 +36,17 @@ export default async function PostPage({ params }: PostPageProps) {
     isSaved = (count ?? 0) > 0
   }
 
+  // Check if blocked
+  let isBlocked = false
+  if (user && user.id !== post.user_id) {
+    const { count } = await supabase
+      .from('blocked_users')
+      .select('*', { count: 'exact', head: true })
+      .eq('blocker_id', user.id)
+      .eq('blocked_id', post.user_id)
+    isBlocked = (count ?? 0) > 0
+  }
+
   // Get reviews for post author
   const { data: reviews } = await supabase
     .from('reviews')
@@ -56,6 +67,7 @@ export default async function PostPage({ params }: PostPageProps) {
       reviews={reviews ?? []}
       avgRating={typeof ratingData === 'number' ? ratingData : null}
       isSaved={isSaved}
+      isBlocked={isBlocked}
       currentUserId={user?.id ?? null}
     />
   )

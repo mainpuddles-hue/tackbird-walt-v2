@@ -35,6 +35,7 @@ import {
   Pencil,
   Trash2,
   CreditCard,
+  ShieldOff,
 } from 'lucide-react'
 import { CATEGORIES } from '@/lib/constants'
 import { formatTimeAgo, formatPrice, formatResponseRate, formatEventDate } from '@/lib/format'
@@ -46,6 +47,7 @@ interface PostDetailClientProps {
   reviews: Review[]
   avgRating: number | null
   isSaved: boolean
+  isBlocked: boolean
   currentUserId: string | null
 }
 
@@ -54,9 +56,11 @@ export function PostDetailClient({
   reviews,
   avgRating,
   isSaved: initialSaved,
+  isBlocked: initialBlocked,
   currentUserId,
 }: PostDetailClientProps) {
   const [saved, setSaved] = useState(initialSaved)
+  const [blocked, setBlocked] = useState(initialBlocked)
   const [savingBookmark, setSavingBookmark] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(post.title)
@@ -177,6 +181,40 @@ export function PostDetailClient({
       toast.error('Ilmianto epäonnistui')
     } else {
       toast.success('Ilmianto lähetetty')
+    }
+  }
+
+  async function handleToggleBlock() {
+    if (!currentUserId) {
+      toast.error('Kirjaudu sisään estääksesi käyttäjän')
+      return
+    }
+    if (!blocked) {
+      const confirmed = window.confirm(
+        `Haluatko varmasti estää käyttäjän ${user?.name ?? ''}? Et näe hänen ilmoituksiaan etkä voi viestiä hänen kanssaan.`
+      )
+      if (!confirmed) return
+    }
+    try {
+      if (blocked) {
+        const { error } = await supabase
+          .from('blocked_users')
+          .delete()
+          .eq('blocker_id', currentUserId)
+          .eq('blocked_id', post.user_id)
+        if (error) throw error
+        setBlocked(false)
+        toast.success('Esto poistettu')
+      } else {
+        const { error } = await supabase
+          .from('blocked_users')
+          .insert({ blocker_id: currentUserId, blocked_id: post.user_id })
+        if (error) throw error
+        setBlocked(true)
+        toast.success('Käyttäjä estetty')
+      }
+    } catch {
+      toast.error('Toiminto epäonnistui')
     }
   }
 
@@ -519,6 +557,15 @@ export function PostDetailClient({
             >
               <Flag className="mr-2 h-3.5 w-3.5" />
               Ilmianna
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full text-muted-foreground"
+              onClick={handleToggleBlock}
+            >
+              <ShieldOff className="mr-2 h-3.5 w-3.5" />
+              {blocked ? 'Poista esto' : 'Estä käyttäjä'}
             </Button>
           </div>
         )}

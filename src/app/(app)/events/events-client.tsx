@@ -14,10 +14,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { CalendarDays, MapPin, Users, Plus, Check } from 'lucide-react'
+import { CalendarDays, MapPin, Users, Plus, Check, List, Pencil, Trash2 } from 'lucide-react'
 import { formatEventDateShort, formatEventDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { CalendarView } from '@/components/calendar-view'
 import type { Event } from '@/lib/types'
 
 type EventWithMeta = Event & { attendee_count: number; is_attending: boolean }
@@ -38,6 +39,17 @@ export function EventsClient({ events: initialEvents, currentUserId }: EventsCli
   const [newDate, setNewDate] = useState('')
   const [newLocation, setNewLocation] = useState('')
   const [newMaxAttendees, setNewMaxAttendees] = useState('')
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list')
+
+  // Edit state
+  const [editing, setEditing] = useState(false)
+  const [editTitle, setEditTitle] = useState('')
+  const [editDesc, setEditDesc] = useState('')
+  const [editDate, setEditDate] = useState('')
+  const [editLocation, setEditLocation] = useState('')
+  const [editMaxAttendees, setEditMaxAttendees] = useState('')
+  const [editSaving, setEditSaving] = useState(false)
+
   const router = useRouter()
   const supabase = createClient()
 
@@ -52,6 +64,79 @@ export function EventsClient({ events: initialEvents, currentUserId }: EventsCli
     }
     return true
   })
+
+  function openEditMode() {
+    if (!selectedEvent) return
+    setEditTitle(selectedEvent.title)
+    setEditDesc(selectedEvent.description || '')
+    setEditDate(selectedEvent.event_date ? selectedEvent.event_date.slice(0, 16) : '')
+    setEditLocation(selectedEvent.location_name || '')
+    setEditMaxAttendees(selectedEvent.max_attendees ? String(selectedEvent.max_attendees) : '')
+    setEditing(true)
+  }
+
+  function closeEditMode() {
+    setEditing(false)
+    setEditTitle('')
+    setEditDesc('')
+    setEditDate('')
+    setEditLocation('')
+    setEditMaxAttendees('')
+  }
+
+  async function handleEditSave() {
+    if (!selectedEvent || !currentUserId) return
+    if (!editTitle.trim() || !editDate) {
+      toast.error('Otsikko ja päivämäärä vaaditaan')
+      return
+    }
+    setEditSaving(true)
+    try {
+      const updates = {
+        title: editTitle.trim(),
+        description: editDesc.trim() || null,
+        event_date: editDate,
+        location_name: editLocation.trim() || null,
+        max_attendees: editMaxAttendees ? parseInt(editMaxAttendees) : null,
+      }
+      const { error } = await supabase
+        .from('events')
+        .update(updates)
+        .eq('id', selectedEvent.id)
+      if (error) throw error
+
+      const updatedEvent = { ...selectedEvent, ...updates }
+      setEvents((prev) =>
+        prev.map((e) => (e.id === selectedEvent.id ? updatedEvent : e))
+      )
+      setSelectedEvent(updatedEvent)
+      closeEditMode()
+      toast.success('Tapahtuma päivitetty')
+    } catch {
+      toast.error('Tapahtuman päivitys epäonnistui')
+    } finally {
+      setEditSaving(false)
+    }
+  }
+
+  async function handleDelete() {
+    if (!selectedEvent || !currentUserId) return
+    if (!window.confirm('Haluatko varmasti poistaa tämän tapahtuman?')) return
+
+    try {
+      const { error } = await supabase
+        .from('events')
+        .delete()
+        .eq('id', selectedEvent.id)
+      if (error) throw error
+
+      setEvents((prev) => prev.filter((e) => e.id !== selectedEvent.id))
+      setSelectedEvent(null)
+      toast.success('Tapahtuma poistettu')
+    } catch {
+      toast.error('Tapahtuman poisto epäonnistui')
+    }
+  }
 
   async function handleAttend(eventId: string) {
     if (!currentUserId) {
@@ -123,7 +208,7 @@ export function EventsClient({ events: initialEvents, currentUserId }: EventsCli
         event_date: newDate,
         location_name: newLocation.trim() || null,
         max_attendees: newMaxAttendees ? parseInt(newMaxAttendees) : null,
-        icon: '📅',
+        icon: '\ud83d\udcc5',
       })
       if (error) throw error
       toast.success('Tapahtuma luotu!')
@@ -141,11 +226,20 @@ export function EventsClient({ events: initialEvents, currentUserId }: EventsCli
     }
   }
 
+  function handleDialogClose(open: boolean) {
+    if (!open) {
+      setSelectedEvent(null)
+      closeEditMode()
+    }
+  }
+
   const filters = [
     { key: 'all', label: 'Kaikki' },
     { key: 'today', label: 'Tänään' },
     { key: 'week', label: 'Tällä viikolla' },
   ]
+
+  const isOwner = selectedEvent && currentUserId && selectedEvent.creator_id === currentUserId
 
   return (
     <div className="p-4 space-y-4">
@@ -154,11 +248,25 @@ export function EventsClient({ events: initialEvents, currentUserId }: EventsCli
           <h2 className="text-lg font-semibold">Tapahtumat</h2>
           <p className="text-xs text-muted-foreground">{filteredEvents.length} tapahtumaa</p>
         </div>
-        {currentUserId && (
-          <Button size="sm" onClick={() => setShowCreate(true)}>
-            <Plus className="mr-1 h-4 w-4" /> Luo
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setViewMode(viewMode === 'list' ? 'calendar' : 'list')}
+            title={viewMode === 'list' ? 'Kalenterinäkymä' : 'Listanäkymä'}
+          >
+            {viewMode === 'list' ? (
+              <CalendarDays className="h-5 w-5" />
+            ) : (
+              <List className="h-5 w-5" />
+            )}
           </Button>
-        )}
+          {currentUserId && (
+            <Button size="sm" onClick={() => setShowCreate(true)}>
+              <Plus className="mr-1 h-4 w-4" /> Luo
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Filters */}
@@ -179,75 +287,84 @@ export function EventsClient({ events: initialEvents, currentUserId }: EventsCli
         ))}
       </div>
 
+      {/* Calendar view */}
+      {viewMode === 'calendar' && (
+        <CalendarView events={filteredEvents} onSelectEvent={setSelectedEvent} />
+      )}
+
       {/* Events list */}
-      {filteredEvents.length === 0 ? (
-        <div className="py-16 text-center text-muted-foreground">
-          <CalendarDays className="mx-auto h-10 w-10 mb-2 opacity-50" />
-          <p className="text-lg font-medium">Ei tulevia tapahtumia</p>
-          <p className="text-sm mt-1">Luo ensimmäinen tapahtuma!</p>
-        </div>
-      ) : (
-        <div className="space-y-3">
-          {filteredEvents.map((event) => (
-            <Card
-              key={event.id}
-              className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
-              onClick={() => setSelectedEvent(event)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-start gap-3">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-2xl">
-                    {event.icon || '📅'}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-medium leading-snug">{event.title}</h3>
-                    <p className="mt-0.5 text-xs text-muted-foreground">
-                      {formatEventDateShort(event.event_date)}
-                    </p>
-                    <div className="mt-1.5 flex items-center gap-3 text-xs text-muted-foreground">
-                      {event.location_name && (
-                        <span className="flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {event.location_name}
-                        </span>
-                      )}
-                      <span className="flex items-center gap-1">
-                        <Users className="h-3 w-3" />
-                        {event.attendee_count} osallistujaa
-                      </span>
+      {viewMode === 'list' && (
+        <>
+          {filteredEvents.length === 0 ? (
+            <div className="py-16 text-center text-muted-foreground">
+              <CalendarDays className="mx-auto h-10 w-10 mb-2 opacity-50" />
+              <p className="text-lg font-medium">Ei tulevia tapahtumia</p>
+              <p className="text-sm mt-1">Luo ensimmäinen tapahtuma!</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredEvents.map((event) => (
+                <Card
+                  key={event.id}
+                  className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => setSelectedEvent(event)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-2xl">
+                        {event.icon || '\ud83d\udcc5'}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="font-medium leading-snug">{event.title}</h3>
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          {formatEventDateShort(event.event_date)}
+                        </p>
+                        <div className="mt-1.5 flex items-center gap-3 text-xs text-muted-foreground">
+                          {event.location_name && (
+                            <span className="flex items-center gap-1">
+                              <MapPin className="h-3 w-3" />
+                              {event.location_name}
+                            </span>
+                          )}
+                          <span className="flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            {event.attendee_count} osallistujaa
+                          </span>
+                        </div>
+                      </div>
+                      <Button
+                        variant={event.is_attending ? 'secondary' : 'default'}
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleAttend(event.id)
+                        }}
+                      >
+                        {event.is_attending ? (
+                          <>
+                            <Check className="mr-1 h-3.5 w-3.5" /> Osallistun
+                          </>
+                        ) : (
+                          'Osallistu'
+                        )}
+                      </Button>
                     </div>
-                  </div>
-                  <Button
-                    variant={event.is_attending ? 'secondary' : 'default'}
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleAttend(event.id)
-                    }}
-                  >
-                    {event.is_attending ? (
-                      <>
-                        <Check className="mr-1 h-3.5 w-3.5" /> Osallistun
-                      </>
-                    ) : (
-                      'Osallistu'
-                    )}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* Event detail dialog */}
-      <Dialog open={!!selectedEvent} onOpenChange={(open) => !open && setSelectedEvent(null)}>
+      <Dialog open={!!selectedEvent} onOpenChange={handleDialogClose}>
         <DialogContent className="max-w-md">
-          {selectedEvent && (
+          {selectedEvent && !editing && (
             <>
               <DialogHeader>
                 <div className="flex items-center gap-3">
-                  <span className="text-3xl">{selectedEvent.icon || '📅'}</span>
+                  <span className="text-3xl">{selectedEvent.icon || '\ud83d\udcc5'}</span>
                   <DialogTitle className="text-left">{selectedEvent.title}</DialogTitle>
                 </div>
               </DialogHeader>
@@ -291,6 +408,98 @@ export function EventsClient({ events: initialEvents, currentUserId }: EventsCli
               >
                 {selectedEvent.is_attending ? 'Peru osallistuminen' : 'Osallistu tapahtumaan'}
               </Button>
+
+              {isOwner && (
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={openEditMode}
+                  >
+                    <Pencil className="mr-1.5 h-4 w-4" />
+                    Muokkaa
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    className="flex-1"
+                    onClick={handleDelete}
+                  >
+                    <Trash2 className="mr-1.5 h-4 w-4" />
+                    Poista
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+
+          {selectedEvent && editing && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Muokkaa tapahtumaa</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Otsikko</Label>
+                  <Input
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    placeholder="Tapahtuman nimi"
+                    maxLength={200}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Kuvaus</Label>
+                  <Textarea
+                    value={editDesc}
+                    onChange={(e) => setEditDesc(e.target.value)}
+                    placeholder="Kerro tapahtumasta..."
+                    rows={3}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Päivämäärä ja aika</Label>
+                  <Input
+                    type="datetime-local"
+                    value={editDate}
+                    onChange={(e) => setEditDate(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Sijainti</Label>
+                  <Input
+                    value={editLocation}
+                    onChange={(e) => setEditLocation(e.target.value)}
+                    placeholder="Esim. Karhupuisto"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Maksimi osallistujamäärä (valinnainen)</Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    value={editMaxAttendees}
+                    onChange={(e) => setEditMaxAttendees(e.target.value)}
+                    placeholder="Ei rajoitusta"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={closeEditMode}
+                    disabled={editSaving}
+                  >
+                    Peruuta
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={handleEditSave}
+                    disabled={editSaving}
+                  >
+                    {editSaving ? 'Tallennetaan...' : 'Tallenna'}
+                  </Button>
+                </div>
+              </div>
             </>
           )}
         </DialogContent>
