@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Bell, Search } from 'lucide-react'
+import { Bell, Search, Map } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
 
@@ -83,6 +83,12 @@ export function Header() {
             <Link href="/search">
               <Search className="h-5 w-5" />
               <span className="sr-only">Haku</span>
+            </Link>
+          </Button>
+          <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
+            <Link href="/map">
+              <Map className="h-5 w-5" />
+              <span className="sr-only">Kartta</span>
             </Link>
           </Button>
           <Button variant="ghost" size="icon" className="h-9 w-9 relative" asChild>

@@ -23,7 +23,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { ArrowLeft, LogOut, Trash2, Download, Lock, Sun, Moon, Monitor, Crown } from 'lucide-react'
+import { ArrowLeft, LogOut, Trash2, Download, Lock, Sun, Moon, Monitor, Crown, ShieldOff } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTheme } from 'next-themes'
 import { ProUpgradeModal } from '@/components/pro-upgrade-modal'
@@ -299,6 +299,16 @@ export function SettingsClient({ profile }: SettingsClientProps) {
           >
             <Lock className="mr-2 h-4 w-4" />
             Vaihda salasana
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full justify-start"
+            asChild
+          >
+            <Link href="/settings/blocked">
+              <ShieldOff className="mr-2 h-4 w-4" />
+              Estetyt käyttäjät
+            </Link>
           </Button>
         </CardContent>
       </Card>
