@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { MapPin, Clock, Crown } from 'lucide-react'
+import { MapPin, Clock, Crown, ImageIcon } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -110,6 +110,12 @@ export function PostCard({ post }: PostCardProps) {
                 onLoad={() => setImgLoaded(true)}
                 sizes="(max-width: 448px) 100vw, 448px"
               />
+              {post.images && post.images.length > 0 && (
+                <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white">
+                  <ImageIcon className="h-3 w-3" />
+                  {post.images.length + 1}
+                </span>
+              )}
             </div>
           )}
 
