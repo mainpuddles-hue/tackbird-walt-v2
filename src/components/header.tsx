@@ -1,10 +1,55 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Bell, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { createClient } from '@/lib/supabase/client'
 
 export function Header() {
+  const [unreadCount, setUnreadCount] = useState(0)
+  const supabase = createClient()
+
+  useEffect(() => {
+    let mounted = true
+
+    async function fetchUnread() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user || !mounted) return
+
+      const { count } = await supabase
+        .from('notifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('is_read', false)
+
+      if (mounted) setUnreadCount(count ?? 0)
+    }
+
+    fetchUnread()
+
+    // Subscribe to new notifications
+    const channel = supabase
+      .channel('header-notifications')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'notifications',
+        },
+        () => {
+          if (mounted) setUnreadCount((prev) => prev + 1)
+        }
+      )
+      .subscribe()
+
+    return () => {
+      mounted = false
+      supabase.removeChannel(channel)
+    }
+  }, [supabase])
+
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="mx-auto flex h-14 max-w-md items-center justify-between px-4">
@@ -40,9 +85,14 @@ export function Header() {
               <span className="sr-only">Haku</span>
             </Link>
           </Button>
-          <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
+          <Button variant="ghost" size="icon" className="h-9 w-9 relative" asChild>
             <Link href="/notifications">
               <Bell className="h-5 w-5" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-medium text-destructive-foreground">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
               <span className="sr-only">Ilmoitukset</span>
             </Link>
           </Button>

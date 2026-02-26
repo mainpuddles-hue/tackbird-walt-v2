@@ -25,6 +25,7 @@ import {
   ClipboardList,
   Bookmark,
   Loader2,
+  Shield,
 } from 'lucide-react'
 import { BADGES, CATEGORIES } from '@/lib/constants'
 import { formatResponseRate, formatTimeAgo } from '@/lib/format'
@@ -343,6 +344,14 @@ export function ProfileClient({
 
       {/* Actions */}
       <div className="space-y-2">
+        {profile.is_admin && (
+          <Button variant="outline" className="w-full justify-start" asChild>
+            <Link href="/admin">
+              <Shield className="mr-2 h-4 w-4 text-blue-500" />
+              Hallintapaneeli
+            </Link>
+          </Button>
+        )}
         <Button
           variant="outline"
           className="w-full justify-start text-destructive hover:text-destructive"
