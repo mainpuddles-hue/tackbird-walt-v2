@@ -20,10 +20,11 @@ export function usePushNotifications(userId: string | null) {
   const [isLoading, setIsLoading] = useState(false)
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null)
 
-  // Check support and register SW on mount
+  // Check support and register SW on mount (deferred to avoid InvalidStateError)
   useEffect(() => {
+    if (typeof window === 'undefined') return
+
     const supported =
-      typeof window !== 'undefined' &&
       'serviceWorker' in navigator &&
       'PushManager' in window &&
       'Notification' in window
@@ -32,19 +33,29 @@ export function usePushNotifications(userId: string | null) {
 
     if (!supported) return
 
-    // Register service worker and check existing subscription
-    navigator.serviceWorker
-      .register('/sw.js')
-      .then((registration) => {
-        registrationRef.current = registration
-        return registration.pushManager.getSubscription()
-      })
-      .then((subscription) => {
-        setIsSubscribed(!!subscription)
-      })
-      .catch((err) => {
-        console.error('SW registration failed:', err)
-      })
+    // Defer SW registration until after page load to avoid
+    // "document is in an invalid state" errors with Next.js Turbopack
+    function registerSW() {
+      navigator.serviceWorker
+        .register('/sw.js')
+        .then((registration) => {
+          registrationRef.current = registration
+          return registration.pushManager.getSubscription()
+        })
+        .then((subscription) => {
+          setIsSubscribed(!!subscription)
+        })
+        .catch((err) => {
+          console.error('SW registration failed:', err)
+        })
+    }
+
+    if (document.readyState === 'complete') {
+      registerSW()
+    } else {
+      window.addEventListener('load', registerSW, { once: true })
+      return () => window.removeEventListener('load', registerSW)
+    }
   }, [])
 
   const subscribe = useCallback(async () => {
