@@ -62,11 +62,10 @@ export function FeedClient({ initialPosts }: FeedClientProps) {
       } = await supabase.auth.getUser()
       if (!user) return
 
-      const { error } = await supabase.from('ad_impressions').insert({
-        ad_id: adId,
-        user_id: user.id,
-        date: today,
-      })
+      const { error } = await supabase.from('ad_impressions').upsert(
+        { ad_id: adId, user_id: user.id, impression_date: today },
+        { onConflict: 'ad_id,user_id,impression_date', ignoreDuplicates: true }
+      )
       // Only increment if insertion succeeded (not a duplicate)
       if (!error) {
         const { data: adData } = await supabase

@@ -18,6 +18,7 @@ export function usePushNotifications(userId: string | null) {
   const [isSupported, setIsSupported] = useState(false)
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null)
 
   // Check support and register SW on mount (deferred to avoid InvalidStateError)
@@ -62,10 +63,12 @@ export function usePushNotifications(userId: string | null) {
     if (!isSupported || !userId) return
 
     setIsLoading(true)
+    setError(null)
     try {
       // Request notification permission
       const permission = await Notification.requestPermission()
       if (permission !== 'granted') {
+        setError('Ilmoituslupa evätty')
         setIsLoading(false)
         return
       }
@@ -118,6 +121,7 @@ export function usePushNotifications(userId: string | null) {
       setIsSubscribed(true)
     } catch (err) {
       console.error('Push subscription failed:', err)
+      setError('Push-tilauksen aktivointi epäonnistui')
     } finally {
       setIsLoading(false)
     }
@@ -161,6 +165,7 @@ export function usePushNotifications(userId: string | null) {
     isSupported,
     isSubscribed,
     isLoading,
+    error,
     subscribe,
     unsubscribe,
   }

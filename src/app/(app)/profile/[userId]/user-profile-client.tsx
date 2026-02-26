@@ -131,7 +131,7 @@ export function UserProfileClient({
       .from('reports')
       .insert({
         reporter_id: currentUserId,
-        reported_user_id: profile.id,
+        user_id: profile.id,
         reason: 'user_report',
       })
     if (error) {

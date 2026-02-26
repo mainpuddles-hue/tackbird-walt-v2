@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
@@ -66,9 +66,14 @@ export function SettingsClient({ profile }: SettingsClientProps) {
     isSupported: pushSupported,
     isSubscribed: pushSubscribed,
     isLoading: pushLoading,
+    error: pushError,
     subscribe: pushSubscribe,
     unsubscribe: pushUnsubscribe,
   } = usePushNotifications(profile?.id ?? null)
+
+  useEffect(() => {
+    if (pushError) toast.error(pushError)
+  }, [pushError])
 
   function handleLanguageChange(newLang: string) {
     setLanguage(newLang)

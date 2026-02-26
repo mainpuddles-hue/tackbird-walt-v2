@@ -40,6 +40,10 @@ const BRAND_COLOR = '#16a34a' // green-600
 const APP_NAME = 'TackBird'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
+if (!process.env.NEXT_PUBLIC_APP_URL && process.env.NODE_ENV === 'production') {
+  console.warn('[email] NEXT_PUBLIC_APP_URL is not set — email links will point to localhost!')
+}
+
 function wrapHtml(title: string, body: string): string {
   return `<!DOCTYPE html>
 <html lang="fi">

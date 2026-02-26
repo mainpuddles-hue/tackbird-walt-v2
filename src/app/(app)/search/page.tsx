@@ -12,6 +12,10 @@ import { FilterBar } from '@/components/filter-bar'
 import Link from 'next/link'
 import type { Post, PostType, Profile } from '@/lib/types'
 
+function escapeIlike(str: string): string {
+  return str.replace(/[%_\\]/g, '\\$&')
+}
+
 export default function SearchPage() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Post[]>([])
@@ -47,7 +51,8 @@ export default function SearchPage() {
         .limit(30)
 
       if (trimmed) {
-        q = q.or(`title.ilike.%${trimmed}%,description.ilike.%${trimmed}%`)
+        const escaped = escapeIlike(trimmed)
+        q = q.or(`title.ilike.%${escaped}%,description.ilike.%${escaped}%`)
       }
       if (activeFilter) {
         q = q.eq('type', activeFilter)
@@ -61,7 +66,7 @@ export default function SearchPage() {
         const { data: userData } = await supabase
           .from('profiles')
           .select('id, name, avatar_url, naapurusto, bio')
-          .ilike('name', `%${trimmed}%`)
+          .ilike('name', `%${escapeIlike(trimmed)}%`)
           .limit(20)
         setUserResults(userData ?? [])
       } else {

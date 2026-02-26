@@ -47,8 +47,8 @@ interface AdminStats {
 interface Report {
   id: string
   reporter_id: string
-  reported_user_id: string
-  reported_post_id: string | null
+  user_id: string | null
+  post_id: string | null
   reason: string
   status: string
   created_at: string
@@ -480,12 +480,12 @@ export function AdminClient({
                         <XCircle className="mr-1 h-3 w-3" />
                         Hylkää
                       </Button>
-                      {report.reported_post_id && (
+                      {report.post_id && (
                         <Button
                           variant="destructive"
                           size="sm"
                           className="h-7 text-xs"
-                          onClick={() => handleDeactivatePost(report.reported_post_id!)}
+                          onClick={() => handleDeactivatePost(report.post_id!)}
                         >
                           <Ban className="mr-1 h-3 w-3" />
                           Poista postaus

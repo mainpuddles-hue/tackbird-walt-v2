@@ -5,40 +5,13 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { sendNewMessageEmail } from '@/lib/email'
 
 // ---------------------------------------------------------------------------
-// Throttle: max 1 email per conversation per hour (in-memory)
-// ---------------------------------------------------------------------------
-
-const throttleMap = new Map<string, number>()
-const THROTTLE_MS = 60 * 60 * 1000 // 1 hour
-
-function isThrottled(conversationKey: string): boolean {
-  const lastSent = throttleMap.get(conversationKey)
-  if (lastSent && Date.now() - lastSent < THROTTLE_MS) {
-    return true
-  }
-  return false
-}
-
-function markSent(conversationKey: string): void {
-  throttleMap.set(conversationKey, Date.now())
-
-  // Cleanup old entries periodically (keep map from growing unbounded)
-  if (throttleMap.size > 10_000) {
-    const cutoff = Date.now() - THROTTLE_MS
-    for (const [key, ts] of throttleMap) {
-      if (ts < cutoff) throttleMap.delete(key)
-    }
-  }
-}
-
-// ---------------------------------------------------------------------------
 // POST /api/notify/message
 // ---------------------------------------------------------------------------
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { recipientId, senderName, preview, conversationId } = body
+    const { recipientId, senderName, preview } = body
 
     if (!recipientId || !senderName || !preview) {
       return NextResponse.json(
@@ -70,15 +43,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Throttle check (per conversation or per recipient if no conversationId)
-    const throttleKey = conversationId
-      ? `conv:${conversationId}`
-      : `pair:${user.id}:${recipientId}`
-
-    if (isThrottled(throttleKey)) {
-      return NextResponse.json({ ok: true, throttled: true })
-    }
-
     // Look up recipient's email using service role (bypasses RLS)
     const supabaseAdmin = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -92,17 +56,26 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (profileError || !profile?.email) {
-      // No email on file or profile not found — silently succeed
       return NextResponse.json({ ok: true, skipped: 'no_email' })
     }
 
-    // Respect user's notification preference
     if (profile.notifications_enabled === false) {
       return NextResponse.json({ ok: true, skipped: 'notifications_disabled' })
     }
 
-    // Send and mark throttle
-    markSent(throttleKey)
+    // Throttle: check if a 'message' notification was sent to this user in the last hour
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString()
+    const { data: recentNotification } = await supabaseAdmin
+      .from('notifications')
+      .select('id')
+      .eq('user_id', recipientId)
+      .eq('type', 'message')
+      .gte('created_at', oneHourAgo)
+      .limit(1)
+
+    if (recentNotification && recentNotification.length > 0) {
+      return NextResponse.json({ ok: true, throttled: true })
+    }
 
     sendNewMessageEmail(profile.email, {
       senderName,

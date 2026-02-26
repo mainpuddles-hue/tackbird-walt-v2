@@ -83,7 +83,14 @@ export default function CreatePage() {
     setGeoLoading(true)
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setGeoCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+        const lat = pos.coords.latitude
+        const lng = pos.coords.longitude
+        if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+          toast.error('Virheelliset koordinaatit')
+          setGeoLoading(false)
+          return
+        }
+        setGeoCoords({ lat, lng })
         setGeoLoading(false)
         toast.success('Sijainti tallennettu')
       },

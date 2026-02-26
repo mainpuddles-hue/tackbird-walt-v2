@@ -160,7 +160,14 @@ CREATE POLICY "Users can view own conversations"
 
 CREATE POLICY "Authenticated users can create conversations"
     ON public.conversations FOR INSERT
-    WITH CHECK (auth.uid() = user1_id OR auth.uid() = user2_id);
+    WITH CHECK (
+        (auth.uid() = user1_id OR auth.uid() = user2_id)
+        AND NOT EXISTS (
+            SELECT 1 FROM public.blocked_users
+            WHERE (blocker_id = user1_id AND blocked_id = user2_id)
+               OR (blocker_id = user2_id AND blocked_id = user1_id)
+        )
+    );
 
 CREATE POLICY "Users can update own conversations"
     ON public.conversations FOR UPDATE
@@ -193,6 +200,13 @@ CREATE POLICY "Users can send messages in own conversations"
             SELECT 1 FROM public.conversations
             WHERE conversations.id = conversation_id
             AND (conversations.user1_id = auth.uid() OR conversations.user2_id = auth.uid())
+        )
+        AND NOT EXISTS (
+            SELECT 1 FROM public.conversations c
+            JOIN public.blocked_users bu ON
+                (bu.blocker_id = c.user1_id AND bu.blocked_id = c.user2_id)
+                OR (bu.blocker_id = c.user2_id AND bu.blocked_id = c.user1_id)
+            WHERE c.id = conversation_id
         )
     );
 

@@ -62,6 +62,7 @@ export function PostDetailClient({
   const [saved, setSaved] = useState(initialSaved)
   const [blocked, setBlocked] = useState(initialBlocked)
   const [savingBookmark, setSavingBookmark] = useState(false)
+  const [blockLoading, setBlockLoading] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editTitle, setEditTitle] = useState(post.title)
   const [editDescription, setEditDescription] = useState(post.description)
@@ -173,8 +174,8 @@ export function PostDetailClient({
       .from('reports')
       .insert({
         reporter_id: currentUserId,
-        reported_user_id: post.user_id,
-        reported_post_id: post.id,
+        user_id: post.user_id,
+        post_id: post.id,
         reason: 'user_report',
       })
     if (error) {
@@ -189,12 +190,14 @@ export function PostDetailClient({
       toast.error('Kirjaudu sisään estääksesi käyttäjän')
       return
     }
+    if (blockLoading) return
     if (!blocked) {
       const confirmed = window.confirm(
         `Haluatko varmasti estää käyttäjän ${user?.name ?? ''}? Et näe hänen ilmoituksiaan etkä voi viestiä hänen kanssaan.`
       )
       if (!confirmed) return
     }
+    setBlockLoading(true)
     try {
       if (blocked) {
         const { error } = await supabase
@@ -215,11 +218,14 @@ export function PostDetailClient({
       }
     } catch {
       toast.error('Toiminto epäonnistui')
+    } finally {
+      setBlockLoading(false)
     }
   }
 
   async function handleSubmitReview() {
     if (!currentUserId) return
+    if (reviewRating < 1 || reviewRating > 5) return
     setReviewSaving(true)
     try {
       const { error } = await supabase.from('reviews').insert({
@@ -352,7 +358,7 @@ export function PostDetailClient({
       {/* Additional images gallery */}
       {post.images && post.images.length > 0 && (
         <div className="flex gap-2 px-4 overflow-x-auto pb-1">
-          {post.images.map((img) => (
+          {post.images.map((img, idx) => (
             <button
               key={img.id}
               className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-muted"
@@ -360,7 +366,7 @@ export function PostDetailClient({
             >
               <Image
                 src={img.image_url}
-                alt=""
+                alt={`${post.title} – kuva ${idx + 2}`}
                 fill
                 className="object-cover"
                 sizes="80px"
@@ -385,7 +391,7 @@ export function PostDetailClient({
           <div className="relative max-h-[85vh] max-w-[90vw] aspect-auto">
             <Image
               src={lightboxImg}
-              alt=""
+              alt={post.title}
               width={800}
               height={600}
               className="max-h-[85vh] w-auto object-contain rounded-lg"

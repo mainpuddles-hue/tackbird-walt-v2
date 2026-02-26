@@ -227,14 +227,7 @@ export function ConversationClient({
   async function handleDeleteConversation() {
     setDeleting(true)
     try {
-      // Delete all messages first
-      const { error: msgError } = await supabase
-        .from('messages')
-        .delete()
-        .eq('conversation_id', conversationId)
-      if (msgError) throw msgError
-
-      // Delete the conversation
+      // Delete conversation (messages cascade via ON DELETE CASCADE)
       const { error: convError } = await supabase
         .from('conversations')
         .delete()

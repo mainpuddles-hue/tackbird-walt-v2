@@ -2,7 +2,13 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { AdminClient, type AdminClientProps } from './admin-client'
 
-export default async function AdminPage() {
+const PAGE_SIZE = 50
+
+export default async function AdminPage({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
+  const params = await searchParams
+  const page = Math.max(1, parseInt(params.page || '1'))
+  const offset = (page - 1) * PAGE_SIZE
+
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -30,18 +36,18 @@ export default async function AdminPage() {
     .from('reports')
     .select(`
       *,
-      reporter:profiles!reports_reporter_id_fkey(id, name, avatar_url),
-      reported_user:profiles!reports_reported_user_id_fkey(id, name, avatar_url)
+      reporter:reporter_id(id, name, avatar_url),
+      reported_user:user_id(id, name, avatar_url)
     `)
     .order('created_at', { ascending: false })
-    .limit(20)
+    .range(offset, offset + PAGE_SIZE - 1)
 
   // Recent users
   const { data: users } = await supabase
     .from('profiles')
     .select('id, name, email, avatar_url, naapurusto, is_pro, is_admin, created_at')
     .order('created_at', { ascending: false })
-    .limit(50)
+    .range(offset, offset + PAGE_SIZE - 1)
 
   // Recent posts with author info
   const { data: posts } = await supabase
@@ -51,7 +57,7 @@ export default async function AdminPage() {
       user:profiles!posts_user_id_fkey(id, name, avatar_url, naapurusto)
     `)
     .order('created_at', { ascending: false })
-    .limit(50)
+    .range(offset, offset + PAGE_SIZE - 1)
 
   // All advertisements with advertiser info
   const { data: ads } = await supabase
@@ -61,6 +67,7 @@ export default async function AdminPage() {
       advertiser:profiles!advertisements_advertiser_id_fkey(id, name, avatar_url)
     `)
     .order('created_at', { ascending: false })
+    .range(offset, offset + PAGE_SIZE - 1)
 
   // Recent rental bookings with related data
   const { data: rentals } = await supabase
@@ -72,10 +79,8 @@ export default async function AdminPage() {
       borrower:profiles!rental_bookings_borrower_id_fkey(id, name, avatar_url)
     `)
     .order('created_at', { ascending: false })
-    .limit(50)
+    .range(offset, offset + PAGE_SIZE - 1)
 
-  // Supabase typed-joins infer foreign key relations as arrays,
-  // but at runtime single-row joins return a single object. Cast via unknown.
   return (
     <AdminClient
       stats={{
