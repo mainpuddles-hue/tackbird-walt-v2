@@ -33,6 +33,11 @@ CREATE POLICY "Profiles are viewable by everyone"
         OR id = auth.uid()
     );
 
+-- Users can insert their own profile (fallback if trigger didn't fire)
+CREATE POLICY "Users can insert own profile"
+    ON public.profiles FOR INSERT
+    WITH CHECK (id = auth.uid());
+
 -- Users can update their own profile
 CREATE POLICY "Users can update own profile"
     ON public.profiles FOR UPDATE

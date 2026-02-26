@@ -58,7 +58,8 @@ export async function updateSession(request: NextRequest) {
     user &&
     pathname !== '/onboarding' &&
     pathname !== '/auth/callback' &&
-    !pathname.startsWith('/login')
+    !pathname.startsWith('/login') &&
+    !pathname.startsWith('/api/')
   ) {
     const { data: profile } = await supabase
       .from('profiles')

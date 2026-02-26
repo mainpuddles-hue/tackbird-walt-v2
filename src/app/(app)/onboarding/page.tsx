@@ -2,7 +2,6 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -18,44 +17,23 @@ export default function OnboardingPage() {
   const [bio, setBio] = useState('')
   const [saving, setSaving] = useState(false)
   const router = useRouter()
-  const supabase = createClient()
 
   async function handleFinish() {
     setSaving(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) {
-        router.push('/login')
-        return
-      }
-
-      // Try update first
-      const { data: updated, error: updateError } = await supabase
-        .from('profiles')
-        .update({
+      const res = await fetch('/api/onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           name: name || 'Käyttäjä',
           naapurusto: naapurusto || 'Kallio',
           bio,
-          onboarding_completed: true,
-        })
-        .eq('id', user.id)
-        .select('id')
+        }),
+      })
 
-      if (updateError) throw updateError
-
-      // If no rows updated, profile doesn't exist yet — insert it
-      if (!updated || updated.length === 0) {
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert({
-            id: user.id,
-            email: user.email ?? null,
-            name: name || 'Käyttäjä',
-            naapurusto: naapurusto || 'Kallio',
-            bio,
-            onboarding_completed: true,
-          })
-        if (insertError) throw insertError
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Tallennus epäonnistui')
       }
 
       toast.success('Tervetuloa TackBirdiin!')
@@ -72,30 +50,13 @@ export default function OnboardingPage() {
   async function handleSkip() {
     setSaving(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/login'); return }
+      const res = await fetch('/api/onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ skip: true }),
+      })
 
-      const { data: updated, error: updateError } = await supabase
-        .from('profiles')
-        .update({ onboarding_completed: true })
-        .eq('id', user.id)
-        .select('id')
-
-      if (updateError) throw updateError
-
-      // If no rows updated, profile doesn't exist yet — insert it
-      if (!updated || updated.length === 0) {
-        const { error: insertError } = await supabase
-          .from('profiles')
-          .insert({
-            id: user.id,
-            email: user.email ?? null,
-            name: 'Käyttäjä',
-            naapurusto: 'Kallio',
-            onboarding_completed: true,
-          })
-        if (insertError) throw insertError
-      }
+      if (!res.ok) throw new Error('Skip failed')
 
       router.push('/')
       router.refresh()
