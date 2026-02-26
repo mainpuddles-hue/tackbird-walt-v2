@@ -1,20 +1,109 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import { PostCard } from '@/components/post-card'
 import { FilterBar } from '@/components/filter-bar'
+import { Loader2 } from 'lucide-react'
 import type { Post, PostType } from '@/lib/types'
 
 interface FeedClientProps {
   initialPosts: Post[]
 }
 
+const PAGE_SIZE = 20
+
 export function FeedClient({ initialPosts }: FeedClientProps) {
   const [activeFilter, setActiveFilter] = useState<PostType | null>(null)
+  const [posts, setPosts] = useState<Post[]>(initialPosts)
+  const [loading, setLoading] = useState(false)
+  const [hasMore, setHasMore] = useState(initialPosts.length >= PAGE_SIZE)
+  const observerRef = useRef<HTMLDivElement>(null)
+  const supabase = createClient()
 
   const filteredPosts = activeFilter
-    ? initialPosts.filter((p) => p.type === activeFilter)
-    : initialPosts
+    ? posts.filter((p) => p.type === activeFilter)
+    : posts
+
+  const loadMore = useCallback(async () => {
+    if (loading || !hasMore) return
+    setLoading(true)
+    try {
+      let query = supabase
+        .from('posts')
+        .select(`
+          *,
+          user:profiles!posts_user_id_fkey(id, name, avatar_url, naapurusto, is_pro, is_hub),
+          images:post_images(id, image_url, sort_order)
+        `)
+        .eq('is_active', true)
+        .order('is_pro_listing', { ascending: false })
+        .order('created_at', { ascending: false })
+        .range(posts.length, posts.length + PAGE_SIZE - 1)
+
+      if (activeFilter) {
+        query = query.eq('type', activeFilter)
+      }
+
+      const { data } = await query
+      if (data && data.length > 0) {
+        setPosts((prev) => [...prev, ...data])
+        if (data.length < PAGE_SIZE) setHasMore(false)
+      } else {
+        setHasMore(false)
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setLoading(false)
+    }
+  }, [loading, hasMore, posts.length, activeFilter, supabase])
+
+  // Reset when filter changes
+  useEffect(() => {
+    if (activeFilter) {
+      // Fetch filtered posts from scratch
+      setLoading(true)
+      const fetchFiltered = async () => {
+        const { data } = await supabase
+          .from('posts')
+          .select(`
+            *,
+            user:profiles!posts_user_id_fkey(id, name, avatar_url, naapurusto, is_pro, is_hub),
+            images:post_images(id, image_url, sort_order)
+          `)
+          .eq('is_active', true)
+          .eq('type', activeFilter)
+          .order('is_pro_listing', { ascending: false })
+          .order('created_at', { ascending: false })
+          .limit(PAGE_SIZE)
+        setPosts(data ?? [])
+        setHasMore((data?.length ?? 0) >= PAGE_SIZE)
+        setLoading(false)
+      }
+      fetchFiltered()
+    } else {
+      // Reset to initial
+      setPosts(initialPosts)
+      setHasMore(initialPosts.length >= PAGE_SIZE)
+    }
+  }, [activeFilter]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Intersection Observer for infinite scroll
+  useEffect(() => {
+    const el = observerRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasMore && !loading) {
+          loadMore()
+        }
+      },
+      { threshold: 0.1 }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [hasMore, loading, loadMore])
 
   return (
     <div className="space-y-3 p-4">
@@ -23,7 +112,7 @@ export function FeedClient({ initialPosts }: FeedClientProps) {
         onFilterChange={setActiveFilter}
       />
 
-      {filteredPosts.length === 0 ? (
+      {filteredPosts.length === 0 && !loading ? (
         <div className="py-16 text-center text-muted-foreground">
           <p className="text-lg font-medium">Ei ilmoituksia</p>
           <p className="text-sm mt-1">Kokeile eri suodatinta tai luo uusi ilmoitus</p>
@@ -34,6 +123,19 @@ export function FeedClient({ initialPosts }: FeedClientProps) {
             <PostCard key={post.id} post={post} />
           ))}
         </div>
+      )}
+
+      {/* Infinite scroll trigger */}
+      <div ref={observerRef} className="h-4" />
+      {loading && (
+        <div className="flex justify-center py-4">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      )}
+      {!hasMore && filteredPosts.length > 0 && (
+        <p className="text-center text-xs text-muted-foreground py-4">
+          Kaikki ilmoitukset ladattu
+        </p>
       )}
     </div>
   )

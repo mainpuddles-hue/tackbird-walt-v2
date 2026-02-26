@@ -63,6 +63,10 @@ export function PostDetailClient({
   const [editLocation, setEditLocation] = useState(post.location ?? '')
   const [editSaving, setEditSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [showReviewDialog, setShowReviewDialog] = useState(false)
+  const [reviewRating, setReviewRating] = useState(5)
+  const [reviewComment, setReviewComment] = useState('')
+  const [reviewSaving, setReviewSaving] = useState(false)
   const router = useRouter()
   const supabase = createClient()
   const category = CATEGORIES[post.type as PostType]
@@ -167,6 +171,37 @@ export function PostDetailClient({
       toast.error('Ilmianto epäonnistui')
     } else {
       toast.success('Ilmianto lähetetty')
+    }
+  }
+
+  async function handleSubmitReview() {
+    if (!currentUserId) return
+    setReviewSaving(true)
+    try {
+      const { error } = await supabase.from('reviews').insert({
+        reviewer_id: currentUserId,
+        reviewed_id: post.user_id,
+        post_id: post.id,
+        rating: reviewRating,
+        comment: reviewComment || null,
+      })
+      if (error) {
+        if (error.code === '23505') {
+          toast.error('Olet jo arvostellut tämän käyttäjän')
+        } else {
+          throw error
+        }
+      } else {
+        toast.success('Arvostelu lähetetty')
+        setShowReviewDialog(false)
+        setReviewComment('')
+        setReviewRating(5)
+        router.refresh()
+      }
+    } catch {
+      toast.error('Arvostelun lähetys epäonnistui')
+    } finally {
+      setReviewSaving(false)
     }
   }
 
@@ -287,7 +322,8 @@ export function PostDetailClient({
         <Separator />
 
         {/* Author card */}
-        <Card>
+        <Link href={isOwn ? '/profile' : `/profile/${post.user_id}`}>
+        <Card className="hover:bg-muted/50 transition-colors">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
               <Avatar className="h-12 w-12">
@@ -327,6 +363,7 @@ export function PostDetailClient({
             )}
           </CardContent>
         </Card>
+        </Link>
 
         {/* Reviews */}
         {reviews.length > 0 && (
@@ -370,10 +407,16 @@ export function PostDetailClient({
         {/* Actions */}
         {!isOwn && currentUserId && (
           <div className="space-y-2">
-            <Button className="w-full" onClick={handleMessage}>
-              <MessageCircle className="mr-2 h-4 w-4" />
-              Lähetä viesti
-            </Button>
+            <div className="flex gap-2">
+              <Button className="flex-1" onClick={handleMessage}>
+                <MessageCircle className="mr-2 h-4 w-4" />
+                Lähetä viesti
+              </Button>
+              <Button variant="outline" className="flex-1" onClick={() => setShowReviewDialog(true)}>
+                <Star className="mr-2 h-4 w-4" />
+                Arvostele
+              </Button>
+            </div>
             <Button
               variant="ghost"
               size="sm"
@@ -422,6 +465,55 @@ export function PostDetailClient({
           </Button>
         )}
       </div>
+
+      {/* Review dialog */}
+      <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Arvostele {user?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Arvosana</Label>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => setReviewRating(i + 1)}
+                    className="p-0.5"
+                  >
+                    <Star
+                      className={`h-7 w-7 transition-colors ${
+                        i < reviewRating
+                          ? 'text-amber-400 fill-amber-400'
+                          : 'text-muted-foreground/30'
+                      }`}
+                    />
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Kommentti (valinnainen)</Label>
+              <Textarea
+                value={reviewComment}
+                onChange={(e) => setReviewComment(e.target.value)}
+                placeholder="Kerro kokemuksestasi..."
+                rows={3}
+                maxLength={1000}
+              />
+            </div>
+            <Button
+              className="w-full"
+              onClick={handleSubmitReview}
+              disabled={reviewSaving}
+            >
+              {reviewSaving ? 'Lähetetään...' : 'Lähetä arvostelu'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit dialog */}
       <Dialog open={editing} onOpenChange={setEditing}>
