@@ -29,7 +29,8 @@ export default function OnboardingPage() {
         return
       }
 
-      const { error } = await supabase
+      // Try update first
+      const { data: updated, error: updateError } = await supabase
         .from('profiles')
         .update({
           name: name || 'Käyttäjä',
@@ -38,12 +39,30 @@ export default function OnboardingPage() {
           onboarding_completed: true,
         })
         .eq('id', user.id)
+        .select('id')
 
-      if (error) throw error
+      if (updateError) throw updateError
+
+      // If no rows updated, profile doesn't exist yet — insert it
+      if (!updated || updated.length === 0) {
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            email: user.email ?? null,
+            name: name || 'Käyttäjä',
+            naapurusto: naapurusto || 'Kallio',
+            bio,
+            onboarding_completed: true,
+          })
+        if (insertError) throw insertError
+      }
+
       toast.success('Tervetuloa TackBirdiin!')
       router.push('/')
       router.refresh()
-    } catch {
+    } catch (err) {
+      console.error('Onboarding error:', err)
       toast.error('Profiilin tallennus epäonnistui')
     } finally {
       setSaving(false)
@@ -56,10 +75,27 @@ export default function OnboardingPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) { router.push('/login'); return }
 
-      await supabase
+      const { data: updated, error: updateError } = await supabase
         .from('profiles')
         .update({ onboarding_completed: true })
         .eq('id', user.id)
+        .select('id')
+
+      if (updateError) throw updateError
+
+      // If no rows updated, profile doesn't exist yet — insert it
+      if (!updated || updated.length === 0) {
+        const { error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: user.id,
+            email: user.email ?? null,
+            name: 'Käyttäjä',
+            naapurusto: 'Kallio',
+            onboarding_completed: true,
+          })
+        if (insertError) throw insertError
+      }
 
       router.push('/')
       router.refresh()
