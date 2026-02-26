@@ -11,6 +11,15 @@ import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import {
   ArrowLeft,
   MapPin,
   Clock,
@@ -23,6 +32,8 @@ import {
   Share2,
   Coins,
   Calendar,
+  Pencil,
+  Trash2,
 } from 'lucide-react'
 import { CATEGORIES } from '@/lib/constants'
 import { formatTimeAgo, formatPrice, formatResponseRate, formatEventDate } from '@/lib/format'
@@ -46,6 +57,12 @@ export function PostDetailClient({
 }: PostDetailClientProps) {
   const [saved, setSaved] = useState(initialSaved)
   const [savingBookmark, setSavingBookmark] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [editTitle, setEditTitle] = useState(post.title)
+  const [editDescription, setEditDescription] = useState(post.description)
+  const [editLocation, setEditLocation] = useState(post.location ?? '')
+  const [editSaving, setEditSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const router = useRouter()
   const supabase = createClient()
   const category = CATEGORIES[post.type as PostType]
@@ -370,8 +387,32 @@ export function PostDetailClient({
         )}
 
         {isOwn && (
-          <div className="text-center text-sm text-muted-foreground">
-            Tämä on oma ilmoituksesi
+          <div className="space-y-2">
+            <Button variant="outline" className="w-full" onClick={() => setEditing(true)}>
+              <Pencil className="mr-2 h-4 w-4" /> Muokkaa ilmoitusta
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full text-destructive hover:text-destructive"
+              onClick={async () => {
+                if (!confirm('Haluatko varmasti poistaa tämän ilmoituksen?')) return
+                setDeleting(true)
+                try {
+                  await supabase.from('posts').update({ is_active: false }).eq('id', post.id)
+                  toast.success('Ilmoitus poistettu')
+                  router.push('/')
+                  router.refresh()
+                } catch {
+                  toast.error('Poistaminen epäonnistui')
+                } finally {
+                  setDeleting(false)
+                }
+              }}
+              disabled={deleting}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              {deleting ? 'Poistetaan...' : 'Poista ilmoitus'}
+            </Button>
           </div>
         )}
 
@@ -381,6 +422,68 @@ export function PostDetailClient({
           </Button>
         )}
       </div>
+
+      {/* Edit dialog */}
+      <Dialog open={editing} onOpenChange={setEditing}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Muokkaa ilmoitusta</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Otsikko</Label>
+              <Input
+                value={editTitle}
+                onChange={(e) => setEditTitle(e.target.value)}
+                maxLength={200}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Kuvaus</Label>
+              <Textarea
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                rows={4}
+                maxLength={5000}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Sijainti</Label>
+              <Input
+                value={editLocation}
+                onChange={(e) => setEditLocation(e.target.value)}
+              />
+            </div>
+            <Button
+              className="w-full"
+              disabled={editSaving}
+              onClick={async () => {
+                setEditSaving(true)
+                try {
+                  const { error } = await supabase
+                    .from('posts')
+                    .update({
+                      title: editTitle,
+                      description: editDescription,
+                      location: editLocation || null,
+                    })
+                    .eq('id', post.id)
+                  if (error) throw error
+                  toast.success('Ilmoitus päivitetty')
+                  setEditing(false)
+                  router.refresh()
+                } catch {
+                  toast.error('Päivitys epäonnistui')
+                } finally {
+                  setEditSaving(false)
+                }
+              }}
+            >
+              {editSaving ? 'Tallennetaan...' : 'Tallenna muutokset'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

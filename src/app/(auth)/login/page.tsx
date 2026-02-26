@@ -15,8 +15,25 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [name, setName] = useState('')
   const [loading, setLoading] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
   const router = useRouter()
   const supabase = createClient()
+
+  async function handlePasswordReset() {
+    if (!email) {
+      toast.error('Syötä sähköpostiosoitteesi ensin')
+      return
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/callback`,
+    })
+    if (error) {
+      toast.error('Salasanan nollaus epäonnistui')
+    } else {
+      setResetSent(true)
+      toast.success('Nollauslinkki lähetetty sähköpostiisi')
+    }
+  }
 
   async function handleGoogleLogin() {
     const { error } = await supabase.auth.signInWithOAuth({
@@ -151,6 +168,19 @@ export default function LoginPage() {
               minLength={8}
               required
             />
+            {isRegister && password.length > 0 && (
+              <div className="space-y-1 text-xs">
+                <p className={password.length >= 8 ? 'text-green-600' : 'text-muted-foreground'}>
+                  {password.length >= 8 ? '✓' : '○'} Vähintään 8 merkkiä
+                </p>
+                <p className={/[A-Z]/.test(password) ? 'text-green-600' : 'text-muted-foreground'}>
+                  {/[A-Z]/.test(password) ? '✓' : '○'} Iso kirjain
+                </p>
+                <p className={/[0-9]/.test(password) ? 'text-green-600' : 'text-muted-foreground'}>
+                  {/[0-9]/.test(password) ? '✓' : '○'} Numero
+                </p>
+              </div>
+            )}
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
             {loading
@@ -159,6 +189,15 @@ export default function LoginPage() {
                 ? 'Rekisteröidy'
                 : 'Kirjaudu'}
           </Button>
+          {!isRegister && (
+            <button
+              type="button"
+              onClick={handlePasswordReset}
+              className="w-full text-center text-xs text-muted-foreground hover:text-primary"
+            >
+              {resetSent ? 'Linkki lähetetty!' : 'Unohditko salasanasi?'}
+            </button>
+          )}
         </form>
 
         <p className="text-center text-sm text-muted-foreground">
