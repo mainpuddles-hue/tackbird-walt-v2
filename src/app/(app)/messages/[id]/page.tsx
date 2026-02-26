@@ -13,6 +13,13 @@ export default async function ConversationPage({ params }: ConversationPageProps
 
   if (!user) redirect('/login')
 
+  // Get current user's profile name for typing indicator
+  const { data: currentProfile } = await supabase
+    .from('profiles')
+    .select('name')
+    .eq('id', user.id)
+    .single()
+
   // Get conversation with both users
   const { data: conversation } = await supabase
     .from('conversations')
@@ -56,6 +63,7 @@ export default async function ConversationPage({ params }: ConversationPageProps
       messages={messages ?? []}
       otherUser={otherUser}
       currentUserId={user.id}
+      currentUserName={currentProfile?.name ?? 'Käyttäjä'}
     />
   )
 }

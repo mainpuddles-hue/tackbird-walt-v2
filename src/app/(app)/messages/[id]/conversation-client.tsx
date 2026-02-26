@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
@@ -19,6 +19,7 @@ interface ConversationClientProps {
   messages: Message[]
   otherUser: Pick<Profile, 'id' | 'name' | 'avatar_url'> | null
   currentUserId: string
+  currentUserName: string
 }
 
 export function ConversationClient({
@@ -26,6 +27,7 @@ export function ConversationClient({
   messages: initialMessages,
   otherUser,
   currentUserId,
+  currentUserName,
 }: ConversationClientProps) {
   const [messages, setMessages] = useState(initialMessages)
   const [newMessage, setNewMessage] = useState('')
@@ -34,8 +36,12 @@ export function ConversationClient({
   const [deleting, setDeleting] = useState(false)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [imageFile, setImageFile] = useState<File | null>(null)
+  const [typingUser, setTypingUser] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
+  const typingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const lastTypingSentRef = useRef<number>(0)
+  const typingHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -80,6 +86,64 @@ export function ConversationClient({
     }
   }, [conversationId, currentUserId, supabase])
 
+  // Typing indicator: subscribe to broadcast channel
+  useEffect(() => {
+    const channel = supabase
+      .channel(`typing:${conversationId}`)
+      .on('broadcast', { event: 'typing' }, (payload) => {
+        const data = payload.payload as { userId: string; userName: string; typing: boolean }
+        if (data.userId === currentUserId) return // Ignore own typing events
+
+        if (data.typing) {
+          setTypingUser(data.userName)
+          // Auto-hide after 4 seconds in case stop event is missed
+          if (typingHideTimeoutRef.current) clearTimeout(typingHideTimeoutRef.current)
+          typingHideTimeoutRef.current = setTimeout(() => {
+            setTypingUser(null)
+          }, 4000)
+        } else {
+          setTypingUser(null)
+          if (typingHideTimeoutRef.current) {
+            clearTimeout(typingHideTimeoutRef.current)
+            typingHideTimeoutRef.current = null
+          }
+        }
+      })
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+      if (typingHideTimeoutRef.current) clearTimeout(typingHideTimeoutRef.current)
+    }
+  }, [conversationId, currentUserId, supabase])
+
+  // Send typing broadcast (debounced: max once every 2 seconds)
+  const sendTypingEvent = useCallback(
+    (typing: boolean) => {
+      const channel = supabase.channel(`typing:${conversationId}`)
+      channel.send({
+        type: 'broadcast',
+        event: 'typing',
+        payload: { userId: currentUserId, userName: currentUserName, typing },
+      })
+    },
+    [conversationId, currentUserId, currentUserName, supabase]
+  )
+
+  function handleTyping() {
+    const now = Date.now()
+    // Debounce: only send typing:true once every 2 seconds
+    if (now - lastTypingSentRef.current >= 2000) {
+      lastTypingSentRef.current = now
+      sendTypingEvent(true)
+    }
+    // Reset the "stop typing" timeout (3 seconds of inactivity)
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
+    typingTimeoutRef.current = setTimeout(() => {
+      sendTypingEvent(false)
+    }, 3000)
+  }
+
   function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -105,6 +169,10 @@ export function ConversationClient({
 
     setSending(true)
     setNewMessage('')
+
+    // Stop typing indicator on send
+    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current)
+    sendTypingEvent(false)
 
     let imageUrl: string | null = null
 
@@ -291,6 +359,19 @@ export function ConversationClient({
             </div>
           )
         })}
+        {/* Typing indicator */}
+        {typingUser && (
+          <div className="flex justify-start">
+            <div className="flex items-center gap-1.5 text-xs text-muted-foreground px-2 py-1">
+              <span>{typingUser} kirjoittaa</span>
+              <span className="typing-dots">
+                <span />
+                <span />
+                <span />
+              </span>
+            </div>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
 
@@ -329,7 +410,10 @@ export function ConversationClient({
         </Button>
         <Input
           value={newMessage}
-          onChange={(e) => setNewMessage(e.target.value)}
+          onChange={(e) => {
+            setNewMessage(e.target.value)
+            handleTyping()
+          }}
           placeholder="Kirjoita viesti..."
           className="flex-1"
           maxLength={5000}

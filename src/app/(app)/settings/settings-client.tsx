@@ -23,10 +23,11 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { ArrowLeft, LogOut, Trash2, Download, Lock, Sun, Moon, Monitor, Crown, ShieldOff, Bookmark } from 'lucide-react'
+import { ArrowLeft, LogOut, Trash2, Download, Lock, Sun, Moon, Monitor, Crown, ShieldOff, Bookmark, Bell } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTheme } from 'next-themes'
 import { ProUpgradeModal } from '@/components/pro-upgrade-modal'
+import { usePushNotifications } from '@/hooks/use-push-notifications'
 import type { Profile } from '@/lib/types'
 import Link from 'next/link'
 
@@ -53,6 +54,13 @@ export function SettingsClient({ profile }: SettingsClientProps) {
   const router = useRouter()
   const supabase = createClient()
   const { theme, setTheme } = useTheme()
+  const {
+    isSupported: pushSupported,
+    isSubscribed: pushSubscribed,
+    isLoading: pushLoading,
+    subscribe: pushSubscribe,
+    unsubscribe: pushUnsubscribe,
+  } = usePushNotifications(profile?.id ?? null)
 
   async function handleSave() {
     setSaving(true)
@@ -203,6 +211,39 @@ export function SettingsClient({ profile }: SettingsClientProps) {
               checked={notifications}
               onCheckedChange={setNotifications}
             />
+          </div>
+
+          {/* Push notifications */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Bell className="h-4 w-4 text-muted-foreground" />
+                <Label htmlFor="push-notifications">Push-ilmoitukset</Label>
+              </div>
+              {pushSupported ? (
+                <Switch
+                  id="push-notifications"
+                  checked={pushSubscribed}
+                  disabled={pushLoading}
+                  onCheckedChange={async (checked) => {
+                    if (checked) {
+                      await pushSubscribe()
+                    } else {
+                      await pushUnsubscribe()
+                    }
+                  }}
+                />
+              ) : (
+                <span className="text-xs text-muted-foreground">Ei tuettu</span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground pl-6">
+              {!pushSupported
+                ? 'Selaimesi ei tue push-ilmoituksia'
+                : pushSubscribed
+                  ? 'Push-ilmoitukset ovat käytössä'
+                  : 'Saat ilmoitukset myös kun sovellus on kiinni'}
+            </p>
           </div>
 
           {/* Theme */}
