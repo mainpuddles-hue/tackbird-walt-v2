@@ -1,0 +1,133 @@
+'use client'
+
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
+import { Button } from '@/components/ui/button'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { ArrowLeft, Bell, Check } from 'lucide-react'
+import { formatTimeAgo } from '@/lib/format'
+import { cn } from '@/lib/utils'
+import Link from 'next/link'
+import type { Notification } from '@/lib/types'
+
+interface NotificationsClientProps {
+  notifications: Notification[]
+}
+
+export function NotificationsClient({
+  notifications: initialNotifications,
+}: NotificationsClientProps) {
+  const [notifications, setNotifications] = useState(initialNotifications)
+  const router = useRouter()
+  const supabase = createClient()
+
+  async function markAllRead() {
+    const unreadIds = notifications.filter((n) => !n.is_read).map((n) => n.id)
+    if (unreadIds.length === 0) return
+
+    await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .in('id', unreadIds)
+
+    setNotifications((prev) =>
+      prev.map((n) => ({ ...n, is_read: true }))
+    )
+  }
+
+  async function handleClick(notification: Notification) {
+    // Mark as read
+    if (!notification.is_read) {
+      await supabase
+        .from('notifications')
+        .update({ is_read: true })
+        .eq('id', notification.id)
+
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n.id === notification.id ? { ...n, is_read: true } : n
+        )
+      )
+    }
+
+    // Navigate based on type
+    if (notification.link_type === 'post' && notification.link_id) {
+      router.push(`/post/${notification.link_id}`)
+    } else if (notification.link_type === 'conversation' && notification.link_id) {
+      router.push(`/messages/${notification.link_id}`)
+    } else if (notification.link_type === 'event' && notification.link_id) {
+      router.push('/events')
+    }
+  }
+
+  const unreadCount = notifications.filter((n) => !n.is_read).length
+
+  return (
+    <div className="p-4 space-y-3">
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+          <Link href="/">
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+        </Button>
+        <h2 className="text-lg font-semibold flex-1">Ilmoitukset</h2>
+        {unreadCount > 0 && (
+          <Button variant="ghost" size="sm" onClick={markAllRead}>
+            <Check className="mr-1 h-3.5 w-3.5" />
+            Merkitse luetuksi
+          </Button>
+        )}
+      </div>
+
+      {notifications.length === 0 ? (
+        <div className="py-16 text-center text-muted-foreground">
+          <Bell className="mx-auto h-10 w-10 mb-2 opacity-50" />
+          <p className="text-lg font-medium">Ei ilmoituksia</p>
+          <p className="text-sm mt-1">Ilmoitukset ilmestyvät tähän</p>
+        </div>
+      ) : (
+        <div className="space-y-1">
+          {notifications.map((notification) => (
+            <button
+              key={notification.id}
+              onClick={() => handleClick(notification)}
+              className={cn(
+                'flex items-start gap-3 rounded-lg p-3 w-full text-left transition-colors hover:bg-muted',
+                !notification.is_read && 'bg-primary/5'
+              )}
+            >
+              <Avatar className="h-9 w-9 mt-0.5">
+                {notification.from_user?.avatar_url && (
+                  <AvatarImage
+                    src={notification.from_user.avatar_url}
+                    alt={notification.from_user.name}
+                  />
+                )}
+                <AvatarFallback className="text-xs">
+                  {notification.from_user?.name?.charAt(0)?.toUpperCase() ?? '!'}
+                </AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1">
+                <p className={cn('text-sm', !notification.is_read && 'font-medium')}>
+                  {notification.title}
+                </p>
+                {notification.body && (
+                  <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                    {notification.body}
+                  </p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  {formatTimeAgo(notification.created_at)}
+                </p>
+              </div>
+              {!notification.is_read && (
+                <div className="h-2 w-2 rounded-full bg-primary shrink-0 mt-2" />
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
