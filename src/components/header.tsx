@@ -5,10 +5,12 @@ import Link from 'next/link'
 import { Bell, Search, Map } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { createClient } from '@/lib/supabase/client'
+import { useI18n } from '@/lib/i18n'
 
 export function Header() {
   const [unreadCount, setUnreadCount] = useState(0)
   const supabase = createClient()
+  const { t } = useI18n()
 
   useEffect(() => {
     let mounted = true
@@ -82,13 +84,13 @@ export function Header() {
           <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
             <Link href="/search">
               <Search className="h-5 w-5" />
-              <span className="sr-only">Haku</span>
+              <span className="sr-only">{t('nav.search')}</span>
             </Link>
           </Button>
           <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
             <Link href="/map">
               <Map className="h-5 w-5" />
-              <span className="sr-only">Kartta</span>
+              <span className="sr-only">{t('nav.map')}</span>
             </Link>
           </Button>
           <Button variant="ghost" size="icon" className="h-9 w-9 relative" asChild>
@@ -99,7 +101,7 @@ export function Header() {
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
-              <span className="sr-only">Ilmoitukset</span>
+              <span className="sr-only">{t('nav.notifications')}</span>
             </Link>
           </Button>
         </div>

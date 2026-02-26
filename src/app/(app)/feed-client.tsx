@@ -8,6 +8,7 @@ import { AdCard } from '@/components/ad-card'
 import { FilterBar } from '@/components/filter-bar'
 import { Loader2, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { useI18n } from '@/lib/i18n'
 import type { Post, PostType } from '@/lib/types'
 
 interface AdData {
@@ -35,6 +36,7 @@ export function FeedClient({ initialPosts }: FeedClientProps) {
   const observerRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const supabase = createClient()
+  const { t } = useI18n()
 
   // Fetch active ads
   useEffect(() => {
@@ -238,14 +240,14 @@ export function FeedClient({ initialPosts }: FeedClientProps) {
           className="w-full gap-2 border-primary/30 text-primary hover:bg-primary/5"
         >
           <RefreshCw className="h-3.5 w-3.5" />
-          {'Uusia ilmoituksia \u2014 p\u00e4ivit\u00e4'}
+          {t('feed.newPosts')}
         </Button>
       )}
 
       {filteredPosts.length === 0 && !loading ? (
         <div className="py-16 text-center text-muted-foreground">
-          <p className="text-lg font-medium">Ei ilmoituksia</p>
-          <p className="text-sm mt-1">Kokeile eri suodatinta tai luo uusi ilmoitus</p>
+          <p className="text-lg font-medium">{t('feed.noPosts')}</p>
+          <p className="text-sm mt-1">{t('feed.noPostsHint')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -278,7 +280,7 @@ export function FeedClient({ initialPosts }: FeedClientProps) {
       )}
       {!hasMore && filteredPosts.length > 0 && (
         <p className="text-center text-xs text-muted-foreground py-4">
-          Kaikki ilmoitukset ladattu
+          {t('feed.allLoaded')}
         </p>
       )}
     </div>

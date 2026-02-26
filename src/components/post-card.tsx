@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { CATEGORIES } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { formatTimeAgo, formatPrice } from '@/lib/format'
+import { useTheme } from 'next-themes'
 import type { Post, PostType } from '@/lib/types'
 
 interface PostCardProps {
@@ -18,9 +19,11 @@ interface PostCardProps {
 
 export function PostCard({ post }: PostCardProps) {
   const [imgLoaded, setImgLoaded] = useState(false)
+  const { resolvedTheme } = useTheme()
   const category = CATEGORIES[post.type as PostType]
   const isPro = post.is_pro_listing
   const user = post.user
+  const isDark = resolvedTheme === 'dark'
 
   return (
     <Link href={`/post/${post.id}`}>
@@ -31,7 +34,9 @@ export function PostCard({ post }: PostCardProps) {
         )}
         style={{
           borderTop: `3px solid ${category?.color ?? '#888'}`,
-          backgroundColor: category?.bgLight ?? '#fff',
+          backgroundColor: isDark
+            ? (category?.bgDark ?? undefined)
+            : (category?.bgLight ?? undefined),
         }}
       >
         <CardContent className="p-4">

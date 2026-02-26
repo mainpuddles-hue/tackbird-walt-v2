@@ -603,7 +603,7 @@ export function AdminClient({
                             variant="secondary"
                             className="text-[10px]"
                             style={{
-                              backgroundColor: category?.bgLight,
+                              backgroundColor: `${category?.color}15`,
                               color: category?.color,
                             }}
                           >
