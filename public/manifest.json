@@ -1,0 +1,10 @@
+{
+  "name": "TackBird",
+  "short_name": "TackBird",
+  "description": "Naapurustosi ilmoitustaulu",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": []
+}
