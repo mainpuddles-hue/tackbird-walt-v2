@@ -11,6 +11,7 @@ import { ArrowLeft, Send, ImageIcon, X, Trash2 } from 'lucide-react'
 import { formatTimeAgo } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
+import { optimizeMessageImage } from '@/lib/image-optimize'
 import type { Message, Profile } from '@/lib/types'
 import Link from 'next/link'
 
@@ -177,13 +178,14 @@ export function ConversationClient({
     let imageUrl: string | null = null
 
     try {
-      // Upload image if present
+      // Upload image if present (optimize before upload)
       if (imageFile) {
-        const ext = imageFile.name.split('.').pop()
+        const optimized = await optimizeMessageImage(imageFile)
+        const ext = optimized.name.split('.').pop()
         const path = `${conversationId}/${Date.now()}.${ext}`
         const { error: uploadError } = await supabase.storage
           .from('messages')
-          .upload(path, imageFile, { cacheControl: '3600' })
+          .upload(path, optimized, { cacheControl: '3600' })
         if (uploadError) throw uploadError
         const { data: urlData } = supabase.storage.from('messages').getPublicUrl(path)
         imageUrl = urlData.publicUrl

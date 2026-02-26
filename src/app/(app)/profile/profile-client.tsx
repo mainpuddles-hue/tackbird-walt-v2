@@ -36,6 +36,7 @@ import {
 import { BADGES, CATEGORIES } from '@/lib/constants'
 import { formatResponseRate, formatTimeAgo, formatPrice } from '@/lib/format'
 import { toast } from 'sonner'
+import { optimizeAvatar } from '@/lib/image-optimize'
 import { ProUpgradeModal } from '@/components/pro-upgrade-modal'
 import { ConnectOnboardingBanner } from '@/components/connect-onboarding-banner'
 import type { Profile, Review, PostType, RentalBooking } from '@/lib/types'
@@ -105,11 +106,12 @@ export function ProfileClient({
     }
     setAvatarUploading(true)
     try {
-      const ext = file.name.split('.').pop()
+      const optimized = await optimizeAvatar(file)
+      const ext = optimized.name.split('.').pop()
       const path = `${profile.id}/${Date.now()}.${ext}`
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(path, file, { cacheControl: '3600', upsert: true })
+        .upload(path, optimized, { cacheControl: '3600', upsert: true })
       if (uploadError) throw uploadError
 
       const { data: urlData } = supabase.storage.from('avatars').getPublicUrl(path)

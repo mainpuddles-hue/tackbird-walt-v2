@@ -13,6 +13,7 @@ import { CATEGORIES } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { ImageIcon, X, MapPin, Loader2, Plus } from 'lucide-react'
+import { optimizePostImage } from '@/lib/image-optimize'
 import type { PostType } from '@/lib/types'
 
 const MAX_EXTRA_IMAGES = 4
@@ -114,13 +115,14 @@ export default function CreatePage() {
 
       let imageUrl: string | null = null
 
-      // Upload main image
+      // Upload main image (optimize before upload)
       if (imageFile) {
-        const ext = imageFile.name.split('.').pop()
+        const optimized = await optimizePostImage(imageFile)
+        const ext = optimized.name.split('.').pop()
         const path = `${user.id}/${Date.now()}.${ext}`
         const { error: uploadError } = await supabase.storage
           .from('posts')
-          .upload(path, imageFile, { cacheControl: '3600', upsert: false })
+          .upload(path, optimized, { cacheControl: '3600', upsert: false })
         if (uploadError) throw uploadError
         const { data: urlData } = supabase.storage.from('posts').getPublicUrl(path)
         imageUrl = urlData.publicUrl
@@ -146,15 +148,16 @@ export default function CreatePage() {
 
       if (error) throw error
 
-      // Upload extra images
+      // Upload extra images (optimize each before upload)
       if (extraImages.length > 0 && newPost) {
         for (let i = 0; i < extraImages.length; i++) {
           const img = extraImages[i]
-          const ext = img.file.name.split('.').pop()
+          const optimized = await optimizePostImage(img.file)
+          const ext = optimized.name.split('.').pop()
           const path = `${user.id}/${Date.now()}-${i}.${ext}`
           const { error: uploadError } = await supabase.storage
             .from('posts')
-            .upload(path, img.file, { cacheControl: '3600' })
+            .upload(path, optimized, { cacheControl: '3600' })
           if (uploadError) continue
           const { data: urlData } = supabase.storage.from('posts').getPublicUrl(path)
           await supabase.from('post_images').insert({
