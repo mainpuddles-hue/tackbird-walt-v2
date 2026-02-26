@@ -23,7 +23,7 @@ import {
   DialogDescription,
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { ArrowLeft, LogOut, Trash2, Download, Lock, Sun, Moon, Monitor, Crown, ShieldOff } from 'lucide-react'
+import { ArrowLeft, LogOut, Trash2, Download, Lock, Sun, Moon, Monitor, Crown, ShieldOff, Bookmark } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTheme } from 'next-themes'
 import { ProUpgradeModal } from '@/components/pro-upgrade-modal'
@@ -85,10 +85,21 @@ export function SettingsClient({ profile }: SettingsClientProps) {
 
   async function handleDeleteAccount() {
     if (deleteConfirm !== 'POISTA') return
+
+    // Two-step confirmation
+    const firstConfirm = window.confirm('Haluatko varmasti poistaa tilisi?')
+    if (!firstConfirm) return
+
+    const secondConfirm = window.confirm(
+      'Tämä toimenpide on peruuttamaton. Kaikki tietosi poistetaan. Oletko varma?'
+    )
+    if (!secondConfirm) return
+
     setDeleteLoading(true)
     try {
-      // Delete profile data (RLS cascade should handle related data)
-      await supabase.from('profiles').delete().eq('id', profile?.id)
+      const res = await fetch('/api/auth/delete-account', { method: 'DELETE' })
+      if (!res.ok) throw new Error('Delete failed')
+
       await supabase.auth.signOut()
       toast.success('Tili poistettu')
       router.push('/login')
@@ -118,36 +129,26 @@ export function SettingsClient({ profile }: SettingsClientProps) {
     }
   }
 
+  const [exportLoading, setExportLoading] = useState(false)
+
   async function handleExportData() {
+    setExportLoading(true)
     toast.info('Kerätään tietoja...')
     try {
-      const userId = profile?.id
-      const [posts, messages, reviews, savedPosts] = await Promise.all([
-        supabase.from('posts').select('*').eq('user_id', userId),
-        supabase.from('messages').select('*').eq('sender_id', userId),
-        supabase.from('reviews').select('*').or(`reviewer_id.eq.${userId},reviewed_id.eq.${userId}`),
-        supabase.from('saved_posts').select('*').eq('user_id', userId),
-      ])
-
-      const data = {
-        profile,
-        posts: posts.data,
-        messages: messages.data,
-        reviews: reviews.data,
-        savedPosts: savedPosts.data,
-        exported_at: new Date().toISOString(),
-      }
-
-      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const res = await fetch('/api/auth/export')
+      if (!res.ok) throw new Error('Export failed')
+      const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
       a.href = url
-      a.download = `tackbird-data-${new Date().toISOString().split('T')[0]}.json`
+      a.download = 'tackbird-data-export.json'
       a.click()
       URL.revokeObjectURL(url)
       toast.success('Tiedot ladattu')
     } catch {
       toast.error('Tietojen vienti epäonnistui')
+    } finally {
+      setExportLoading(false)
     }
   }
 
@@ -313,6 +314,22 @@ export function SettingsClient({ profile }: SettingsClientProps) {
         </CardContent>
       </Card>
 
+      {/* Saved posts */}
+      <Card>
+        <CardContent className="p-4">
+          <Button
+            variant="outline"
+            className="w-full justify-start"
+            asChild
+          >
+            <Link href="/saved">
+              <Bookmark className="mr-2 h-4 w-4" />
+              Tallennetut ilmoitukset
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* Data & Privacy */}
       <Card>
         <CardContent className="p-4 space-y-3">
@@ -321,9 +338,10 @@ export function SettingsClient({ profile }: SettingsClientProps) {
             variant="outline"
             className="w-full justify-start"
             onClick={handleExportData}
+            disabled={exportLoading}
           >
             <Download className="mr-2 h-4 w-4" />
-            Lataa omat tiedot (GDPR)
+            {exportLoading ? 'Ladataan...' : 'Lataa omat tiedot (GDPR)'}
           </Button>
           <p className="text-xs text-muted-foreground">
             Lataa kaikki tietosi JSON-muodossa.
