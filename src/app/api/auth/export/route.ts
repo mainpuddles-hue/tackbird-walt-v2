@@ -1,9 +1,13 @@
 import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
-import { NextResponse } from 'next/server'
+import { NextResponse, type NextRequest } from 'next/server'
+import { authLimiter, getClientIp, rateLimitResponse } from '@/lib/rate-limit'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  const ip = getClientIp(request)
+  if (authLimiter.isLimited(ip)) return rateLimitResponse()
+
   try {
     // Get current user from session cookies (anon key)
     const cookieStore = await cookies()

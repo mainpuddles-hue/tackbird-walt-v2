@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { authLimiter, getClientIp, rateLimitResponse } from '@/lib/rate-limit'
 
 export async function POST(request: Request) {
+  const ip = getClientIp(request)
+  if (authLimiter.isLimited(ip)) return rateLimitResponse()
+
   try {
     const { email } = await request.json()
 

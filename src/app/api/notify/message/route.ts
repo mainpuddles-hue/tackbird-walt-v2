@@ -3,12 +3,16 @@ import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { NextResponse, type NextRequest } from 'next/server'
 import { sendNewMessageEmail } from '@/lib/email'
+import { messageLimiter, getClientIp, rateLimitResponse } from '@/lib/rate-limit'
 
 // ---------------------------------------------------------------------------
 // POST /api/notify/message
 // ---------------------------------------------------------------------------
 
 export async function POST(request: NextRequest) {
+  const ip = getClientIp(request)
+  if (messageLimiter.isLimited(ip)) return rateLimitResponse()
+
   try {
     const body = await request.json()
     const { recipientId, senderName, preview } = body
