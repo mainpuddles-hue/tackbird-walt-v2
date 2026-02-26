@@ -175,11 +175,24 @@ export interface RentalBooking {
   paid_at: string | null
   completed_at: string | null
   cancelled_at: string | null
+  dispute_reason: string | null
+  disputed_at: string | null
   created_at: string
   // Joined
   post?: Post
   lender?: Profile
   borrower?: Profile
+}
+
+export interface RentalReview {
+  id: string
+  booking_id: string
+  reviewer_id: string
+  reviewee_id: string
+  rating: number
+  comment: string | null
+  created_at: string
+  reviewer?: Profile
 }
 
 export interface Advertisement {

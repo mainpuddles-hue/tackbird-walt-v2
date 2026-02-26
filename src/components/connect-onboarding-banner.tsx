@@ -27,8 +27,27 @@ export function ConnectOnboardingBanner({ show }: ConnectOnboardingBannerProps) 
     setDismissed(true)
   }
 
-  function handleActivate() {
-    toast.info('Stripe Connect tulossa pian')
+  const [loading, setLoading] = useState(false)
+
+  async function handleActivate() {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/rentals/connect/onboard', { method: 'POST' })
+      const data = await res.json()
+
+      if (!res.ok) {
+        toast.error(data.error || 'Virhe aktivoinnissa')
+        return
+      }
+
+      if (data.url) {
+        window.location.href = data.url
+      }
+    } catch {
+      toast.error('Verkkovirhe — yrit\u00e4 uudelleen')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -47,10 +66,11 @@ export function ConnectOnboardingBanner({ show }: ConnectOnboardingBannerProps) 
             </p>
             <Button
               size="sm"
+              disabled={loading}
               className="mt-2 h-7 text-xs bg-emerald-600 hover:bg-emerald-700"
               onClick={handleActivate}
             >
-              Aloita aktivointi
+              {loading ? 'Ohjataan...' : 'Aloita aktivointi'}
             </Button>
           </div>
           <button

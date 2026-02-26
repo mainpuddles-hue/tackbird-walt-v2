@@ -286,6 +286,8 @@ CREATE TABLE IF NOT EXISTS public.rental_bookings (
     paid_at TIMESTAMPTZ,
     completed_at TIMESTAMPTZ,
     cancelled_at TIMESTAMPTZ,
+    dispute_reason TEXT,
+    disputed_at TIMESTAMPTZ,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     UNIQUE(post_id, borrower_id, status)
 );
@@ -293,6 +295,22 @@ CREATE TABLE IF NOT EXISTS public.rental_bookings (
 CREATE INDEX IF NOT EXISTS idx_rental_bookings_post ON public.rental_bookings(post_id);
 CREATE INDEX IF NOT EXISTS idx_rental_bookings_lender ON public.rental_bookings(lender_id);
 CREATE INDEX IF NOT EXISTS idx_rental_bookings_borrower ON public.rental_bookings(borrower_id);
+
+-- ============================================================
+-- RENTAL REVIEWS
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.rental_reviews (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    booking_id UUID NOT NULL UNIQUE REFERENCES public.rental_bookings(id) ON DELETE CASCADE,
+    reviewer_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    reviewee_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    rating INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    comment TEXT,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_rental_reviews_booking ON public.rental_reviews(booking_id);
+CREATE INDEX IF NOT EXISTS idx_rental_reviews_reviewee ON public.rental_reviews(reviewee_id);
 
 -- ============================================================
 -- ADVERTISEMENTS

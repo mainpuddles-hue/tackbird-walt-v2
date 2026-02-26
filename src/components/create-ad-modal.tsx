@@ -1,7 +1,6 @@
 'use client'
 
 import { useState } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import {
   Dialog,
   DialogContent,
@@ -37,7 +36,6 @@ export function CreateAdModal({
   const [imageUrl, setImageUrl] = useState('')
   const [days, setDays] = useState(3)
   const [submitting, setSubmitting] = useState(false)
-  const supabase = createClient()
 
   const dailyRate = isPro ? 2.39 : 2.99
   const totalCost = Math.round(days * dailyRate * 100) / 100
@@ -68,27 +66,28 @@ export function CreateAdModal({
       const endDate = new Date()
       endDate.setDate(endDate.getDate() + days)
 
-      const { error } = await supabase.from('advertisements').insert({
-        advertiser_id: advertiserId,
-        title: title.trim(),
-        description: description.trim(),
-        image_url: imageUrl.trim() || null,
-        link_url: linkUrl.trim(),
-        cta_text: ctaText.trim() || 'Lue lisää',
-        daily_rate: dailyRate,
-        start_date: startDate.toISOString().split('T')[0],
-        end_date: endDate.toISOString().split('T')[0],
-        total_cost: totalCost,
-        status: 'pending',
+      const res = await fetch('/api/ads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: title.trim(),
+          description: description.trim(),
+          image_url: imageUrl.trim() || null,
+          link_url: linkUrl.trim(),
+          cta_text: ctaText.trim() || 'Lue lis\u00e4\u00e4',
+          start_date: startDate.toISOString().split('T')[0],
+          end_date: endDate.toISOString().split('T')[0],
+        }),
       })
 
-      if (error) throw error
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Failed')
 
       toast.success('Mainoskampanja luotu!')
       onOpenChange(false)
       resetForm()
     } catch {
-      toast.error('Kampanjan luominen epäonnistui')
+      toast.error('Kampanjan luominen ep\u00e4onnistui')
     } finally {
       setSubmitting(false)
     }

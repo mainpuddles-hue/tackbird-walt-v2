@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import {
   Crown,
   TrendingUp,
@@ -63,9 +64,27 @@ const BENEFITS = [
 ] as const
 
 export function ProUpgradeModal({ open, onOpenChange }: ProUpgradeModalProps) {
-  function handleUpgrade() {
-    toast.info('Pro-tilaus tulossa pian!')
-    onOpenChange(false)
+  const [loading, setLoading] = useState(false)
+
+  async function handleUpgrade() {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/pro/checkout', { method: 'POST' })
+      const data = await res.json()
+
+      if (!res.ok) {
+        toast.error(data.error || 'Virhe Pro-tilauksen aloittamisessa')
+        return
+      }
+
+      if (data.url) {
+        window.location.href = data.url
+      }
+    } catch {
+      toast.error('Verkkovirhe — yrit\u00e4 uudelleen')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -110,10 +129,11 @@ export function ProUpgradeModal({ open, onOpenChange }: ProUpgradeModalProps) {
 
           <Button
             onClick={handleUpgrade}
+            disabled={loading}
             className="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-white font-semibold h-11"
           >
             <Crown className="h-4 w-4 mr-1" />
-            P\u00e4ivit\u00e4 Pro:ksi
+            {loading ? 'Ohjataan maksuun...' : 'P\u00e4ivit\u00e4 Pro:ksi'}
           </Button>
 
           <p className="text-center text-xs text-muted-foreground">
