@@ -1,10 +1,12 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { PostCard } from '@/components/post-card'
 import { FilterBar } from '@/components/filter-bar'
-import { Loader2 } from 'lucide-react'
+import { Loader2, RefreshCw } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import type { Post, PostType } from '@/lib/types'
 
 interface FeedClientProps {
@@ -18,7 +20,9 @@ export function FeedClient({ initialPosts }: FeedClientProps) {
   const [posts, setPosts] = useState<Post[]>(initialPosts)
   const [loading, setLoading] = useState(false)
   const [hasMore, setHasMore] = useState(initialPosts.length >= PAGE_SIZE)
+  const [hasNewPosts, setHasNewPosts] = useState(false)
   const observerRef = useRef<HTMLDivElement>(null)
+  const router = useRouter()
   const supabase = createClient()
 
   const filteredPosts = activeFilter
@@ -59,6 +63,36 @@ export function FeedClient({ initialPosts }: FeedClientProps) {
     }
   }, [loading, hasMore, posts.length, activeFilter, supabase])
 
+  // Supabase Realtime subscription for new posts
+  useEffect(() => {
+    const channel = supabase
+      .channel('feed-new-posts')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'posts',
+        },
+        (payload) => {
+          const newPost = payload.new as Post
+          if (newPost.is_active) {
+            setHasNewPosts(true)
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [supabase])
+
+  function handleRefreshFeed() {
+    setHasNewPosts(false)
+    router.refresh()
+  }
+
   // Reset when filter changes
   useEffect(() => {
     if (activeFilter) {
@@ -89,6 +123,14 @@ export function FeedClient({ initialPosts }: FeedClientProps) {
     }
   }, [activeFilter]) // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Sync with server-provided data when initialPosts change (e.g. after router.refresh())
+  useEffect(() => {
+    if (!activeFilter) {
+      setPosts(initialPosts)
+      setHasMore(initialPosts.length >= PAGE_SIZE)
+    }
+  }, [initialPosts]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // Intersection Observer for infinite scroll
   useEffect(() => {
     const el = observerRef.current
@@ -111,6 +153,19 @@ export function FeedClient({ initialPosts }: FeedClientProps) {
         activeFilter={activeFilter}
         onFilterChange={setActiveFilter}
       />
+
+      {/* New posts banner */}
+      {hasNewPosts && (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleRefreshFeed}
+          className="w-full gap-2 border-primary/30 text-primary hover:bg-primary/5"
+        >
+          <RefreshCw className="h-3.5 w-3.5" />
+          {'Uusia ilmoituksia \u2014 p\u00e4ivit\u00e4'}
+        </Button>
+      )}
 
       {filteredPosts.length === 0 && !loading ? (
         <div className="py-16 text-center text-muted-foreground">

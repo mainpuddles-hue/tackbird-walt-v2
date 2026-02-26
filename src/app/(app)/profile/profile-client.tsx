@@ -30,10 +30,12 @@ import {
   CheckCircle,
   XCircle,
   Clock,
+  Crown,
 } from 'lucide-react'
 import { BADGES, CATEGORIES } from '@/lib/constants'
 import { formatResponseRate, formatTimeAgo, formatPrice } from '@/lib/format'
 import { toast } from 'sonner'
+import { ProUpgradeModal } from '@/components/pro-upgrade-modal'
 import type { Profile, Review, PostType, RentalBooking } from '@/lib/types'
 import Link from 'next/link'
 
@@ -62,6 +64,7 @@ export function ProfileClient({
   const [bioText, setBioText] = useState(profile?.bio ?? '')
   const [bioSaving, setBioSaving] = useState(false)
   const [avatarUploading, setAvatarUploading] = useState(false)
+  const [showProModal, setShowProModal] = useState(false)
   const avatarInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
   const supabase = createClient()
@@ -450,6 +453,42 @@ export function ProfileClient({
         </div>
       )}
 
+      {/* Pro status */}
+      {profile.is_pro ? (
+        <Card>
+          <CardContent className="p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-50 text-amber-600">
+                <Crown className="h-5 w-5" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold">TackBird Pro</p>
+                <p className="text-xs text-muted-foreground">
+                  {profile.pro_expires_at
+                    ? `Voimassa ${new Date(profile.pro_expires_at).toLocaleDateString('fi-FI')}`
+                    : 'Aktiivinen'}
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <button
+          onClick={() => setShowProModal(true)}
+          className="w-full rounded-xl border border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 p-4 text-left transition-colors hover:from-amber-100 hover:to-yellow-100"
+        >
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-amber-100 text-amber-600">
+              <Crown className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold">Päivitä TackBird Pro:ksi</p>
+              <p className="text-xs text-muted-foreground">Nosta ilmoituksiasi ja saa lisää etuja</p>
+            </div>
+          </div>
+        </button>
+      )}
+
       {/* Actions */}
       <div className="space-y-2">
         {profile.is_admin && (
@@ -469,6 +508,9 @@ export function ProfileClient({
           Kirjaudu ulos
         </Button>
       </div>
+
+      {/* Pro upgrade modal */}
+      <ProUpgradeModal open={showProModal} onOpenChange={setShowProModal} />
 
       {/* Bio edit dialog */}
       <Dialog open={editingBio} onOpenChange={setEditingBio}>

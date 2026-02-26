@@ -1,16 +1,22 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
-import { MessageCircle, ImageIcon } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { MessageCircle, ImageIcon, Archive, Inbox } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Button } from '@/components/ui/button'
 import { formatTimeAgo } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { createClient } from '@/lib/supabase/client'
+import { toast } from 'sonner'
 import type { Profile } from '@/lib/types'
 
 interface EnrichedConversation {
   id: string
   user1_id: string
   user2_id: string
+  is_archived?: boolean
   updated_at: string
   user1: Pick<Profile, 'id' | 'name' | 'avatar_url'> | null
   user2: Pick<Profile, 'id' | 'name' | 'avatar_url'> | null
@@ -29,81 +35,150 @@ interface MessagesClientProps {
 }
 
 export function MessagesClient({ conversations, currentUserId }: MessagesClientProps) {
+  const [showArchived, setShowArchived] = useState(false)
+  const router = useRouter()
+  const supabase = createClient()
+
+  const visibleConversations = conversations.filter((conv) =>
+    showArchived ? conv.is_archived : !conv.is_archived
+  )
+
+  async function handleToggleArchive(e: React.MouseEvent, conversationId: string, currentlyArchived: boolean) {
+    e.preventDefault()
+    e.stopPropagation()
+
+    const { error } = await supabase
+      .from('conversations')
+      .update({ is_archived: !currentlyArchived })
+      .eq('id', conversationId)
+
+    if (error) {
+      toast.error('Toiminto epäonnistui')
+      return
+    }
+
+    toast.success(currentlyArchived ? 'Keskustelu palautettu' : 'Keskustelu arkistoitu')
+    router.refresh()
+  }
+
   return (
     <div className="p-4 space-y-3">
-      <h2 className="text-lg font-semibold">Viestit</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">
+          {showArchived ? 'Arkisto' : 'Viestit'}
+        </h2>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowArchived(!showArchived)}
+          className="gap-1.5 text-muted-foreground"
+        >
+          {showArchived ? (
+            <>
+              <Inbox className="h-4 w-4" />
+              Viestit
+            </>
+          ) : (
+            <>
+              <Archive className="h-4 w-4" />
+              Arkisto
+            </>
+          )}
+        </Button>
+      </div>
 
-      {conversations.length === 0 ? (
+      {visibleConversations.length === 0 ? (
         <div className="py-16 text-center text-muted-foreground">
           <MessageCircle className="mx-auto h-10 w-10 mb-2 opacity-50" />
-          <p className="text-lg font-medium">Ei keskusteluja</p>
-          <p className="text-sm mt-1">Viestit ilmestyvät tähän kun aloitat keskustelun</p>
+          <p className="text-lg font-medium">
+            {showArchived ? 'Ei arkistoituja keskusteluja' : 'Ei keskusteluja'}
+          </p>
+          <p className="text-sm mt-1">
+            {showArchived
+              ? 'Arkistoidut keskustelut ilmestyvät tähän'
+              : 'Viestit ilmestyvät tähän kun aloitat keskustelun'}
+          </p>
         </div>
       ) : (
         <div className="space-y-1">
-          {conversations.map((conv) => {
+          {visibleConversations.map((conv) => {
             const otherUser =
               conv.user1_id === currentUserId ? conv.user2 : conv.user1
             const hasUnread = conv.unread_count > 0
             const lastMsg = conv.last_message
+            const isArchived = conv.is_archived === true
 
             let preview = ''
             if (lastMsg) {
-              if (lastMsg.image_url && (!lastMsg.content || lastMsg.content === '📷 Kuva')) {
-                preview = '📷 Kuva'
+              if (lastMsg.image_url && (!lastMsg.content || lastMsg.content === '\ud83d\udcf7 Kuva')) {
+                preview = '\ud83d\udcf7 Kuva'
               } else {
                 const isMine = lastMsg.sender_id === currentUserId
-                preview = isMine ? `Sinä: ${lastMsg.content}` : lastMsg.content
+                preview = isMine ? `Sin\u00e4: ${lastMsg.content}` : lastMsg.content
               }
             }
 
             return (
-              <Link
-                key={conv.id}
-                href={`/messages/${conv.id}`}
-                className={cn(
-                  'flex items-center gap-3 rounded-lg p-3 transition-colors hover:bg-muted',
-                  hasUnread && 'bg-muted/50'
-                )}
-              >
-                <div className="relative">
-                  <Avatar className="h-10 w-10">
-                    {otherUser?.avatar_url && (
-                      <AvatarImage
-                        src={otherUser.avatar_url}
-                        alt={otherUser.name}
-                      />
-                    )}
-                    <AvatarFallback>
-                      {otherUser?.name?.charAt(0)?.toUpperCase() ?? '?'}
-                    </AvatarFallback>
-                  </Avatar>
-                  {hasUnread && (
-                    <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-medium text-primary-foreground">
-                      {conv.unread_count}
-                    </span>
+              <div key={conv.id} className="relative group">
+                <Link
+                  href={`/messages/${conv.id}`}
+                  className={cn(
+                    'flex items-center gap-3 rounded-lg p-3 pr-12 transition-colors hover:bg-muted',
+                    hasUnread && 'bg-muted/50'
                   )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className={cn(
-                      'truncate text-sm',
-                      hasUnread ? 'font-semibold' : 'font-medium'
-                    )}>
-                      {otherUser?.name ?? 'Käyttäjä'}
-                    </p>
-                    <span className="shrink-0 text-[10px] text-muted-foreground">
-                      {lastMsg ? formatTimeAgo(lastMsg.created_at) : formatTimeAgo(conv.updated_at)}
-                    </span>
+                >
+                  <div className="relative">
+                    <Avatar className="h-10 w-10">
+                      {otherUser?.avatar_url && (
+                        <AvatarImage
+                          src={otherUser.avatar_url}
+                          alt={otherUser.name}
+                        />
+                      )}
+                      <AvatarFallback>
+                        {otherUser?.name?.charAt(0)?.toUpperCase() ?? '?'}
+                      </AvatarFallback>
+                    </Avatar>
+                    {hasUnread && (
+                      <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-medium text-primary-foreground">
+                        {conv.unread_count}
+                      </span>
+                    )}
                   </div>
-                  <p className={cn(
-                    'truncate text-xs',
-                    hasUnread ? 'text-foreground font-medium' : 'text-muted-foreground'
-                  )}>
-                    {preview || 'Ei viestejä vielä'}
-                  </p>
-                </div>
-              </Link>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className={cn(
+                        'truncate text-sm',
+                        hasUnread ? 'font-semibold' : 'font-medium'
+                      )}>
+                        {otherUser?.name ?? 'K\u00e4ytt\u00e4j\u00e4'}
+                      </p>
+                      <span className="shrink-0 text-[10px] text-muted-foreground">
+                        {lastMsg ? formatTimeAgo(lastMsg.created_at) : formatTimeAgo(conv.updated_at)}
+                      </span>
+                    </div>
+                    <p className={cn(
+                      'truncate text-xs',
+                      hasUnread ? 'text-foreground font-medium' : 'text-muted-foreground'
+                    )}>
+                      {preview || 'Ei viestej\u00e4 viel\u00e4'}
+                    </p>
+                  </div>
+                </Link>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground"
+                  onClick={(e) => handleToggleArchive(e, conv.id, isArchived)}
+                  title={isArchived ? 'Palauta' : 'Arkistoi'}
+                >
+                  {isArchived ? (
+                    <Inbox className="h-4 w-4" />
+                  ) : (
+                    <Archive className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             )
           })}
         </div>
