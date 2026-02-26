@@ -12,8 +12,10 @@ import { Card, CardContent } from '@/components/ui/card'
 import { CATEGORIES } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
-import { ImageIcon, X, MapPin, Loader2 } from 'lucide-react'
+import { ImageIcon, X, MapPin, Loader2, Plus } from 'lucide-react'
 import type { PostType } from '@/lib/types'
+
+const MAX_EXTRA_IMAGES = 4
 
 export default function CreatePage() {
   const [type, setType] = useState<PostType>('tarvitsen')
@@ -24,10 +26,12 @@ export default function CreatePage() {
   const [eventDate, setEventDate] = useState('')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [extraImages, setExtraImages] = useState<{ file: File; preview: string }[]>([])
   const [geoCoords, setGeoCoords] = useState<{ lat: number; lng: number } | null>(null)
   const [geoLoading, setGeoLoading] = useState(false)
   const [loading, setLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const extraInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
   const supabase = createClient()
 
@@ -47,6 +51,28 @@ export default function CreatePage() {
     setImageFile(null)
     setImagePreview(null)
     if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
+  function handleExtraImagePick(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Kuva saa olla korkeintaan 5 MB')
+      return
+    }
+    if (extraImages.length >= MAX_EXTRA_IMAGES) {
+      toast.error(`Voit lisätä enintään ${MAX_EXTRA_IMAGES} lisäkuvaa`)
+      return
+    }
+    setExtraImages((prev) => [...prev, { file, preview: URL.createObjectURL(file) }])
+    if (extraInputRef.current) extraInputRef.current.value = ''
+  }
+
+  function removeExtraImage(index: number) {
+    setExtraImages((prev) => {
+      URL.revokeObjectURL(prev[index].preview)
+      return prev.filter((_, i) => i !== index)
+    })
   }
 
   function handleGeolocate() {
@@ -81,7 +107,7 @@ export default function CreatePage() {
 
       let imageUrl: string | null = null
 
-      // Upload image to Supabase Storage
+      // Upload main image
       if (imageFile) {
         const ext = imageFile.name.split('.').pop()
         const path = `${user.id}/${Date.now()}.${ext}`
@@ -93,20 +119,44 @@ export default function CreatePage() {
         imageUrl = urlData.publicUrl
       }
 
-      const { error } = await supabase.from('posts').insert({
-        user_id: user.id,
-        type,
-        title,
-        description,
-        location: location || null,
-        image_url: imageUrl,
-        daily_fee: dailyFee ? parseFloat(dailyFee) : null,
-        event_date: eventDate || null,
-        latitude: geoCoords?.lat ?? null,
-        longitude: geoCoords?.lng ?? null,
-      })
+      // Create post
+      const { data: newPost, error } = await supabase
+        .from('posts')
+        .insert({
+          user_id: user.id,
+          type,
+          title,
+          description,
+          location: location || null,
+          image_url: imageUrl,
+          daily_fee: dailyFee ? parseFloat(dailyFee) : null,
+          event_date: eventDate || null,
+          latitude: geoCoords?.lat ?? null,
+          longitude: geoCoords?.lng ?? null,
+        })
+        .select('id')
+        .single()
 
       if (error) throw error
+
+      // Upload extra images
+      if (extraImages.length > 0 && newPost) {
+        for (let i = 0; i < extraImages.length; i++) {
+          const img = extraImages[i]
+          const ext = img.file.name.split('.').pop()
+          const path = `${user.id}/${Date.now()}-${i}.${ext}`
+          const { error: uploadError } = await supabase.storage
+            .from('posts')
+            .upload(path, img.file, { cacheControl: '3600' })
+          if (uploadError) continue
+          const { data: urlData } = supabase.storage.from('posts').getPublicUrl(path)
+          await supabase.from('post_images').insert({
+            post_id: newPost.id,
+            image_url: urlData.publicUrl,
+            sort_order: i,
+          })
+        }
+      }
 
       toast.success('Ilmoitus julkaistu!')
       router.push('/')
@@ -231,9 +281,9 @@ export default function CreatePage() {
               </div>
             )}
 
-            {/* Image upload */}
+            {/* Main image upload */}
             <div className="space-y-2">
-              <Label>Kuva (valinnainen)</Label>
+              <Label>Pääkuva (valinnainen)</Label>
               <input
                 ref={fileInputRef}
                 type="file"
@@ -271,6 +321,47 @@ export default function CreatePage() {
                   <span className="text-xs">JPG, PNG, max 5 MB</span>
                 </button>
               )}
+            </div>
+
+            {/* Extra images */}
+            <div className="space-y-2">
+              <Label>Lisäkuvat ({extraImages.length}/{MAX_EXTRA_IMAGES})</Label>
+              <input
+                ref={extraInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleExtraImagePick}
+                className="hidden"
+              />
+              <div className="flex gap-2 flex-wrap">
+                {extraImages.map((img, i) => (
+                  <div key={i} className="relative h-20 w-20 rounded-lg overflow-hidden border">
+                    <Image
+                      src={img.preview}
+                      alt={`Lisäkuva ${i + 1}`}
+                      fill
+                      className="object-cover"
+                      unoptimized
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeExtraImage(i)}
+                      className="absolute top-1 right-1 h-5 w-5 rounded-full bg-black/60 text-white flex items-center justify-center"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+                {extraImages.length < MAX_EXTRA_IMAGES && (
+                  <button
+                    type="button"
+                    onClick={() => extraInputRef.current?.click()}
+                    className="h-20 w-20 rounded-lg border-2 border-dashed flex items-center justify-center text-muted-foreground hover:bg-muted/50 transition-colors"
+                  >
+                    <Plus className="h-5 w-5" />
+                  </button>
+                )}
+              </div>
             </div>
 
             <Button type="submit" className="w-full" disabled={loading}>
