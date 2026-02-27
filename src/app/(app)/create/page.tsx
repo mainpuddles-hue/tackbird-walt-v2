@@ -9,17 +9,44 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { CATEGORIES } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
-import { ImageIcon, X, MapPin, Loader2, Plus } from 'lucide-react'
+import {
+  X, MapPin, Loader2, Plus, Camera, ArrowLeft, ChevronRight,
+  HandHelping, Gift, Heart, Zap, BookOpen, CalendarDays, AlertTriangle,
+} from 'lucide-react'
 import { optimizePostImage } from '@/lib/image-optimize'
+import { useTheme } from 'next-themes'
 import type { PostType } from '@/lib/types'
+import type { LucideIcon } from 'lucide-react'
 
 const MAX_EXTRA_IMAGES = 4
 
+const ICON_MAP: Record<string, LucideIcon> = {
+  HandHelping,
+  Gift,
+  Heart,
+  Zap,
+  BookOpen,
+  CalendarDays,
+  AlertTriangle,
+}
+
+const CATEGORY_DESCRIPTIONS: Record<PostType, string> = {
+  tarvitsen: 'Tarvitsetko apua tai tavaraa?',
+  tarjoan: 'Tarjoa palvelusta tai tavaraa',
+  ilmaista: 'Anna pois ilmaiseksi',
+  nappaa: 'Nopea tarjous — 24h voimassa',
+  lainaa: 'Lainaa tai vuokraa tavaroita',
+  tapahtuma: 'Luo naapuruston tapahtuma',
+  tilannehuone: 'Tiedota kiireellisestä asiasta',
+}
+
 export default function CreatePage() {
-  const [type, setType] = useState<PostType>('tarvitsen')
+  const [step, setStep] = useState<1 | 2>(1)
+  const [type, setType] = useState<PostType | null>(null)
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [location, setLocation] = useState('')
@@ -35,6 +62,20 @@ export default function CreatePage() {
   const extraInputRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
   const supabase = createClient()
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === 'dark'
+
+  const cat = type ? CATEGORIES[type] : null
+  const CatIcon = cat ? ICON_MAP[cat.icon] : null
+
+  function handleCategorySelect(key: PostType) {
+    setType(key)
+    setStep(2)
+  }
+
+  function handleBack() {
+    setStep(1)
+  }
 
   function handleImagePick(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
@@ -104,6 +145,7 @@ export default function CreatePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
+    if (!type) return
     setLoading(true)
 
     try {
@@ -115,7 +157,6 @@ export default function CreatePage() {
 
       let imageUrl: string | null = null
 
-      // Upload main image (optimize before upload)
       if (imageFile) {
         const optimized = await optimizePostImage(imageFile)
         const ext = optimized.name.split('.').pop()
@@ -128,7 +169,6 @@ export default function CreatePage() {
         imageUrl = urlData.publicUrl
       }
 
-      // Create post
       const { data: newPost, error } = await supabase
         .from('posts')
         .insert({
@@ -148,7 +188,6 @@ export default function CreatePage() {
 
       if (error) throw error
 
-      // Upload extra images (optimize each before upload)
       if (extraImages.length > 0 && newPost) {
         for (let i = 0; i < extraImages.length; i++) {
           const img = extraImages[i]
@@ -179,39 +218,86 @@ export default function CreatePage() {
     }
   }
 
-  return (
-    <div className="p-4 space-y-4">
-      <h2 className="text-lg font-semibold">Luo ilmoitus</h2>
+  /* ─── Step 1: Category Selection ─── */
+  if (step === 1) {
+    return (
+      <div className="animate-page-in px-4 pt-6 pb-20">
+        <h1 className="text-xl font-semibold">Luo ilmoitus</h1>
+        <p className="text-sm text-muted-foreground mt-1">Valitse ilmoitustyyppi</p>
 
-      {/* Category selector */}
-      <div className="grid grid-cols-4 gap-2">
-        {(Object.entries(CATEGORIES) as [PostType, (typeof CATEGORIES)[PostType]][]).map(
-          ([key, cat]) => (
-            <button
-              key={key}
-              type="button"
-              onClick={() => setType(key)}
-              className={cn(
-                'rounded-lg p-2 text-center text-xs font-medium transition-all',
-                type === key
-                  ? 'ring-2 ring-offset-1 text-white'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
-              )}
-              style={
-                type === key
-                  ? { backgroundColor: cat.color }
-                  : undefined
-              }
-            >
-              {cat.label}
-            </button>
-          )
+        <div className="mt-6 flex flex-col gap-3">
+          {(Object.entries(CATEGORIES) as [PostType, (typeof CATEGORIES)[PostType]][]).map(
+            ([key, c], index) => {
+              const Icon = ICON_MAP[c.icon]
+              return (
+                <Card
+                  key={key}
+                  className={cn(
+                    'animate-card-in relative overflow-hidden cursor-pointer transition-colors',
+                    'hover:border-[var(--color-muted-foreground)]',
+                    `stagger-${index + 1}`
+                  )}
+                  style={{ backgroundColor: isDark ? c.bgDark : c.bgLight }}
+                  onClick={() => handleCategorySelect(key)}
+                >
+                  {/* Left accent bar */}
+                  <div
+                    className="absolute left-0 top-0 bottom-0 w-[3px]"
+                    style={{ backgroundColor: c.color }}
+                  />
+
+                  <CardContent className="flex items-center gap-3 p-4 pl-5">
+                    {/* Icon circle */}
+                    <div
+                      className="h-12 w-12 shrink-0 rounded-full flex items-center justify-center"
+                      style={{ backgroundColor: isDark ? c.bgLight + '20' : c.color + '15' }}
+                    >
+                      {Icon && <Icon className="h-5 w-5" style={{ color: c.color }} />}
+                    </div>
+
+                    {/* Label + description */}
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm">{c.label}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {CATEGORY_DESCRIPTIONS[key]}
+                      </p>
+                    </div>
+
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  </CardContent>
+                </Card>
+              )
+            }
+          )}
+        </div>
+      </div>
+    )
+  }
+
+  /* ─── Step 2: Form ─── */
+  return (
+    <div className="animate-page-in px-4 pt-6 pb-20">
+      {/* Header: back + category badge */}
+      <div className="flex items-center gap-3 mb-6">
+        <Button variant="ghost" size="icon" onClick={handleBack} className="shrink-0">
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        {cat && CatIcon && (
+          <Badge
+            variant="secondary"
+            className="gap-1.5 text-xs font-medium"
+            style={{ backgroundColor: `${cat.color}15`, color: cat.color }}
+          >
+            <CatIcon className="h-3.5 w-3.5" />
+            {cat.label}
+          </Badge>
         )}
       </div>
 
-      <Card>
-        <CardContent className="p-4">
-          <form onSubmit={handleSubmit} className="space-y-4">
+      <Card className="shadow-[0_1px_4px_rgba(26,26,46,0.06)]">
+        <CardContent className="p-5">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Title */}
             <div className="space-y-2">
               <Label htmlFor="title">Otsikko</Label>
               <Input
@@ -224,6 +310,7 @@ export default function CreatePage() {
               />
             </div>
 
+            {/* Description */}
             <div className="space-y-2">
               <Label htmlFor="description">Kuvaus</Label>
               <Textarea
@@ -237,6 +324,7 @@ export default function CreatePage() {
               />
             </div>
 
+            {/* Location */}
             <div className="space-y-2">
               <Label htmlFor="location">Sijainti</Label>
               <Input
@@ -251,7 +339,12 @@ export default function CreatePage() {
                 size="sm"
                 onClick={handleGeolocate}
                 disabled={geoLoading}
-                className={cn(geoCoords && 'border-primary text-primary')}
+                className="transition-colors"
+                style={
+                  geoCoords && cat
+                    ? { borderColor: cat.color, color: cat.color }
+                    : undefined
+                }
               >
                 {geoLoading ? (
                   <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
@@ -264,6 +357,7 @@ export default function CreatePage() {
               </Button>
             </div>
 
+            {/* Daily fee (lainaa only) */}
             {type === 'lainaa' && (
               <div className="space-y-2">
                 <Label htmlFor="dailyFee">Päivähinta (€)</Label>
@@ -279,6 +373,7 @@ export default function CreatePage() {
               </div>
             )}
 
+            {/* Event date (tapahtuma only) */}
             {type === 'tapahtuma' && (
               <div className="space-y-2">
                 <Label htmlFor="eventDate">Päivämäärä ja aika</Label>
@@ -302,7 +397,10 @@ export default function CreatePage() {
                 className="hidden"
               />
               {imagePreview ? (
-                <div className="relative rounded-lg overflow-hidden border">
+                <div
+                  className="relative rounded-xl overflow-hidden"
+                  style={cat ? { border: `2px solid ${cat.color}30` } : undefined}
+                >
                   <Image
                     src={imagePreview}
                     alt="Esikatselu"
@@ -323,9 +421,9 @@ export default function CreatePage() {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full rounded-lg border-2 border-dashed p-6 text-center text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
+                  className="w-full rounded-xl border-2 border-dashed p-8 text-center text-sm text-muted-foreground hover:bg-muted/50 transition-colors"
                 >
-                  <ImageIcon className="mx-auto h-6 w-6 mb-2" />
+                  <Camera className="mx-auto h-8 w-8 mb-2" />
                   Lisää kuva
                   <br />
                   <span className="text-xs">JPG, PNG, max 5 MB</span>
@@ -343,9 +441,9 @@ export default function CreatePage() {
                 onChange={handleExtraImagePick}
                 className="hidden"
               />
-              <div className="flex gap-2 flex-wrap">
+              <div className="flex gap-2 overflow-x-auto pb-1">
                 {extraImages.map((img, i) => (
-                  <div key={i} className="relative h-20 w-20 rounded-lg overflow-hidden border">
+                  <div key={i} className="relative h-20 w-20 shrink-0 rounded-xl overflow-hidden border">
                     <Image
                       src={img.preview}
                       alt={`Lisäkuva ${i + 1}`}
@@ -366,7 +464,7 @@ export default function CreatePage() {
                   <button
                     type="button"
                     onClick={() => extraInputRef.current?.click()}
-                    className="h-20 w-20 rounded-lg border-2 border-dashed flex items-center justify-center text-muted-foreground hover:bg-muted/50 transition-colors"
+                    className="h-20 w-20 shrink-0 rounded-xl border-2 border-dashed flex items-center justify-center text-muted-foreground hover:bg-muted/50 transition-colors"
                   >
                     <Plus className="h-5 w-5" />
                   </button>
@@ -374,8 +472,21 @@ export default function CreatePage() {
               </div>
             </div>
 
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Julkaistaan...' : 'Julkaise ilmoitus'}
+            {/* Submit */}
+            <Button
+              type="submit"
+              className="w-full h-12 rounded-xl text-white font-semibold"
+              style={cat ? { backgroundColor: cat.color } : undefined}
+              disabled={loading}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Julkaistaan...
+                </>
+              ) : (
+                'Julkaise ilmoitus'
+              )}
             </Button>
           </form>
         </CardContent>
