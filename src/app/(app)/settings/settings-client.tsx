@@ -24,7 +24,7 @@ import {
 } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { PasswordStrength, isPasswordValid } from '@/components/password-strength'
-import { ArrowLeft, LogOut, Trash2, Download, Lock, Sun, Moon, Monitor, Crown, ShieldOff, Bookmark, Bell, Building2, MapPin } from 'lucide-react'
+import { ArrowLeft, LogOut, Trash2, Download, Lock, Sun, Moon, Monitor, Crown, ShieldOff, Bookmark, Bell, Building2, MapPin, FileText, Shield, HelpCircle, Cookie } from 'lucide-react'
 import { toast } from 'sonner'
 import { useTheme } from 'next-themes'
 import { ProUpgradeModal } from '@/components/pro-upgrade-modal'
@@ -507,6 +507,17 @@ export function SettingsClient({ profile }: SettingsClientProps) {
               {t('settings.blockedUsers')}
             </Link>
           </Button>
+          <Button
+            variant="outline"
+            className="w-full justify-start"
+            onClick={() => {
+              localStorage.removeItem('cookie-consent')
+              window.location.reload()
+            }}
+          >
+            <Cookie className="mr-2 h-4 w-4" />
+            {t('settings.cookieSettings')}
+          </Button>
         </CardContent>
       </Card>
 
@@ -542,6 +553,29 @@ export function SettingsClient({ profile }: SettingsClientProps) {
           <p className="text-xs text-muted-foreground">
             {t('settings.exportDesc')}
           </p>
+        </CardContent>
+      </Card>
+
+      {/* About */}
+      <Card>
+        <CardContent className="p-4 space-y-3">
+          <h3 className="text-sm font-semibold">{t('settings.about')}</h3>
+          <Button variant="outline" className="w-full justify-start" asChild>
+            <a href="/terms" target="_blank">
+              <FileText className="mr-2 h-4 w-4" /> {t('settings.terms')}
+            </a>
+          </Button>
+          <Button variant="outline" className="w-full justify-start" asChild>
+            <a href="/privacy" target="_blank">
+              <Shield className="mr-2 h-4 w-4" /> {t('settings.privacy')}
+            </a>
+          </Button>
+          <Button variant="outline" className="w-full justify-start" asChild>
+            <a href="mailto:tuki@tackbird.fi">
+              <HelpCircle className="mr-2 h-4 w-4" /> {t('settings.support')}
+            </a>
+          </Button>
+          <p className="text-xs text-muted-foreground text-center">TackBird v1.0.0</p>
         </CardContent>
       </Card>
 

@@ -146,7 +146,7 @@
     "visibilityHidden": "Dold",
     "theme": "Utseende",
     "themeLight": "Ljust",
-    "themeDark": "M\u00f6rkt",
+    "themeDark": "Mörkt (beta)",
     "themeAuto": "Auto",
     "security": "S\u00e4kerhet",
     "newPassword": "Nytt l\u00f6senord",
@@ -172,8 +172,19 @@
     "businessRegisterDesc": "Registrera ett f\u00f6retagskonto f\u00f6r att skapa annonskampanjer.",
     "businessRegistered": "F\u00f6retagskonto registrerat",
     "businessRegisterFailed": "Kunde inte registrera f\u00f6retagskonto",
-    "businessNameRequired": "F\u00f6retagsnamn kr\u00e4vs",
-    "businessVatRequired": "Organisationsnummer kr\u00e4vs"
+    "businessNameRequired": "Företagsnamn krävs",
+    "businessVatRequired": "Organisationsnummer krävs",
+    "terms": "Användarvillkor",
+    "support": "Support och feedback"
+  },
+  "postCard": {
+    "viewListing": "Visa annons",
+    "viewLoanTerms": "Visa lånevillkor",
+    "viewEvent": "Visa evenemang",
+    "grab": "Fånga!",
+    "boosted": "Lyft",
+    "verifiedPro": "Verifierad proffs",
+    "payInApp": "Betala i appen"
   },
   "auth": {
     "login": "Logga in",

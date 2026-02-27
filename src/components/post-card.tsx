@@ -3,15 +3,26 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { MapPin, Clock, Crown, ImageIcon } from 'lucide-react'
+import { MapPin, Clock, Crown, ImageIcon, ChevronRight, BookOpen, CalendarCheck, Zap, TrendingUp, BadgeCheck, CreditCard } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { CATEGORIES } from '@/lib/constants'
+import { Pushpin } from '@/components/pushpin'
+import { CATEGORIES, BOARD } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { formatTimeAgo, formatPrice } from '@/lib/format'
 import { useTheme } from 'next-themes'
 import type { Post, PostType } from '@/lib/types'
+
+const ctaConfig: Record<string, { label: string; icon: typeof ChevronRight }> = {
+  tarvitsen: { label: 'Katso ilmoitus', icon: ChevronRight },
+  tarjoan: { label: 'Katso ilmoitus', icon: ChevronRight },
+  ilmaista: { label: 'Katso ilmoitus', icon: ChevronRight },
+  tilannehuone: { label: 'Katso ilmoitus', icon: ChevronRight },
+  lainaa: { label: 'Katso lainaehdot', icon: BookOpen },
+  tapahtuma: { label: 'Katso tapahtuma', icon: CalendarCheck },
+  nappaa: { label: 'Nappaa!', icon: Zap },
+}
 
 interface PostCardProps {
   post: Post
@@ -24,22 +35,33 @@ export function PostCard({ post }: PostCardProps) {
   const isPro = post.is_pro_listing
   const user = post.user
   const isDark = resolvedTheme === 'dark'
+  const cta = ctaConfig[post.type as string] ?? ctaConfig.tarvitsen
 
   return (
     <Link href={`/post/${post.id}`}>
       <Card
         className={cn(
-          'overflow-hidden transition-shadow hover:shadow-md',
-          isPro && 'ring-1 ring-amber-300'
+          'overflow-visible transition-all hover:shadow-md hover:-translate-y-0.5',
+          isPro && 'ring-2 ring-amber-400/60'
         )}
         style={{
+          borderRadius: '4px',
           borderTop: `3px solid ${category?.color ?? '#888'}`,
-          backgroundColor: isDark
-            ? (category?.bgDark ?? undefined)
-            : (category?.bgLight ?? undefined),
+          boxShadow: isDark ? BOARD.paperShadowDark : BOARD.paperShadow,
+          backgroundColor: isPro
+            ? (isDark ? '#2D2510' : undefined)
+            : (isDark ? (category?.bgDark ?? undefined) : (category?.bgLight ?? undefined)),
+          backgroundImage: isPro && !isDark
+            ? 'linear-gradient(135deg, #FFF8E7 0%, #FFF3D0 100%)'
+            : undefined,
         }}
       >
-        <CardContent className="p-4">
+        {/* Pushpin */}
+        <div className="flex justify-center -mt-2.5 relative z-10">
+          <Pushpin color={isPro ? '#d4a832' : category?.color} size={18} />
+        </div>
+
+        <CardContent className="p-4 pt-1">
           {/* Header: avatar + name + time */}
           <div className="flex items-center gap-3 mb-3">
             <Avatar className="h-9 w-9">
@@ -90,6 +112,18 @@ export function PostCard({ post }: PostCardProps) {
             </Badge>
           </div>
 
+          {/* Pro badges */}
+          {isPro && (
+            <div className="flex gap-1.5 mb-2">
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                <TrendingUp className="h-3 w-3" /> Nostettu
+              </span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                <BadgeCheck className="h-3 w-3" /> Vahvistettu taitaja
+              </span>
+            </div>
+          )}
+
           {/* Title */}
           <h3 className="font-semibold leading-snug mb-1">{post.title}</h3>
 
@@ -124,11 +158,16 @@ export function PostCard({ post }: PostCardProps) {
             </div>
           )}
 
-          {/* Footer: price or location */}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          {/* Footer: price, location, lainaa badge */}
+          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
             {post.daily_fee != null && (
               <span className="font-medium text-foreground">
                 {formatPrice(post.daily_fee)} / pv
+              </span>
+            )}
+            {post.type === 'lainaa' && post.daily_fee != null && (
+              <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                <CreditCard className="h-3 w-3" /> Maksu sovelluksessa
               </span>
             )}
             {post.location && (
@@ -137,6 +176,18 @@ export function PostCard({ post }: PostCardProps) {
                 {post.location}
               </span>
             )}
+          </div>
+
+          {/* CTA button */}
+          <div
+            className="flex items-center justify-center gap-1.5 rounded py-2 text-xs font-medium transition-colors"
+            style={{
+              backgroundColor: `${category?.color}12`,
+              color: category?.color,
+            }}
+          >
+            <cta.icon className="h-3.5 w-3.5" />
+            {cta.label}
           </div>
         </CardContent>
       </Card>

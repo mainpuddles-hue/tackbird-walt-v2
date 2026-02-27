@@ -146,7 +146,7 @@
     "visibilityHidden": "Piilotettu",
     "theme": "Ulkoasu",
     "themeLight": "Vaalea",
-    "themeDark": "Tumma",
+    "themeDark": "Tumma (beta)",
     "themeAuto": "Auto",
     "security": "Turvallisuus",
     "newPassword": "Uusi salasana",
@@ -173,7 +173,18 @@
     "businessRegistered": "Yritystili rekister\u00f6ity",
     "businessRegisterFailed": "Yritystilin rekister\u00f6inti ep\u00e4onnistui",
     "businessNameRequired": "Yrityksen nimi on pakollinen",
-    "businessVatRequired": "Y-tunnus on pakollinen"
+    "businessVatRequired": "Y-tunnus on pakollinen",
+    "terms": "Käyttöehdot",
+    "support": "Tuki ja palaute"
+  },
+  "postCard": {
+    "viewListing": "Katso ilmoitus",
+    "viewLoanTerms": "Katso lainaehdot",
+    "viewEvent": "Katso tapahtuma",
+    "grab": "Nappaa!",
+    "boosted": "Nostettu",
+    "verifiedPro": "Vahvistettu taitaja",
+    "payInApp": "Maksu sovelluksessa"
   },
   "auth": {
     "login": "Kirjaudu sis\u00e4\u00e4n",

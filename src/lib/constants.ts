@@ -59,6 +59,14 @@ export const CATEGORIES: Record<PostType, {
   },
 }
 
+// Bulletin-board design tokens
+export const BOARD = {
+  boardBg: '#ede5d5',
+  boardBgDark: '#1a1815',
+  paperShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05)',
+  paperShadowDark: '0 2px 8px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2)',
+} as const
+
 // Badge configuration
 export const BADGES = {
   verified: { label: 'Vahvistettu', icon: 'BadgeCheck', color: '#3B82F6' },

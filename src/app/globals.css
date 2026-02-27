@@ -128,6 +128,22 @@
   }
 }
 
+/* TackBird custom animations */
+@keyframes popIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fadeInUp {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Button press feedback */
+button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
 /* Typing indicator bouncing dots */
 @keyframes typing-dot {
   0%, 60%, 100% {

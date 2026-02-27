@@ -146,7 +146,7 @@
     "visibilityHidden": "Hidden",
     "theme": "Appearance",
     "themeLight": "Light",
-    "themeDark": "Dark",
+    "themeDark": "Dark (beta)",
     "themeAuto": "Auto",
     "security": "Security",
     "newPassword": "New password",
@@ -173,7 +173,18 @@
     "businessRegistered": "Business account registered",
     "businessRegisterFailed": "Failed to register business account",
     "businessNameRequired": "Company name is required",
-    "businessVatRequired": "VAT number is required"
+    "businessVatRequired": "VAT number is required",
+    "terms": "Terms of Service",
+    "support": "Support & Feedback"
+  },
+  "postCard": {
+    "viewListing": "View listing",
+    "viewLoanTerms": "View loan terms",
+    "viewEvent": "View event",
+    "grab": "Grab it!",
+    "boosted": "Boosted",
+    "verifiedPro": "Verified pro",
+    "payInApp": "Pay in app"
   },
   "auth": {
     "login": "Log in",

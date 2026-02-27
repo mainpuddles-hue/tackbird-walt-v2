@@ -9,6 +9,7 @@ import { FilterBar } from '@/components/filter-bar'
 import { Loader2, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/lib/i18n'
+import { useTheme } from 'next-themes'
 import type { Post, PostType } from '@/lib/types'
 
 interface AdData {
@@ -37,6 +38,8 @@ export function FeedClient({ initialPosts }: FeedClientProps) {
   const router = useRouter()
   const supabase = createClient()
   const { t } = useI18n()
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === 'dark'
 
   // Fetch active ads
   useEffect(() => {
@@ -224,7 +227,14 @@ export function FeedClient({ initialPosts }: FeedClientProps) {
   }, [hasMore, loading, loadMore])
 
   return (
-    <div className="space-y-3 p-4">
+    <div
+      className="min-h-screen space-y-3 p-4"
+      style={{
+        background: isDark
+          ? 'linear-gradient(180deg, #1a1a1a 0%, #1a1815 100%)'
+          : 'linear-gradient(180deg, #F7F5F0 0%, #ede5d5 100%)',
+      }}
+    >
       <FilterBar
         activeFilter={activeFilter}
         onFilterChange={setActiveFilter}
