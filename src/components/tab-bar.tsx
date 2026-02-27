@@ -6,7 +6,7 @@ import Link from 'next/link'
 import {
   Newspaper,
   CalendarDays,
-  PlusCircle,
+  Plus,
   MessageCircle,
   User,
 } from 'lucide-react'
@@ -16,7 +16,7 @@ import { createClient } from '@/lib/supabase/client'
 const tabs = [
   { href: '/', label: 'Ilmoitukset', icon: Newspaper },
   { href: '/events', label: 'Tapahtumat', icon: CalendarDays },
-  { href: '/create', label: 'Luo', icon: PlusCircle },
+  { href: '/create', label: 'Luo', icon: Plus, isCreate: true },
   { href: '/messages', label: 'Viestit', icon: MessageCircle },
   { href: '/profile', label: 'Profiili', icon: User },
 ] as const
@@ -60,13 +60,27 @@ export function TabBar() {
   }, [supabase])
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 pb-[env(safe-area-inset-bottom)]">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-[var(--color-border)] bg-[var(--color-card)] pb-[env(safe-area-inset-bottom)]">
       <div className="mx-auto flex h-16 max-w-md items-center justify-around px-2">
-        {tabs.map(({ href, label, icon: Icon }) => {
+        {tabs.map(({ href, label, icon: Icon, ...rest }) => {
+          const isCreate = 'isCreate' in rest && rest.isCreate
           const isActive =
             href === '/' ? pathname === '/' : pathname.startsWith(href)
 
           const showBadge = href === '/messages' && unreadMessages > 0
+
+          if (isCreate) {
+            return (
+              <Link
+                key={href}
+                href={href}
+                className="relative flex min-w-[44px] min-h-[44px] flex-col items-center justify-center gap-0.5 px-3 py-1"
+              >
+                <Icon className="h-5 w-5 text-[var(--color-accent)]" strokeWidth={1.75} />
+                <span className="font-[family-name:var(--font-bricolage)] text-[10px] text-[var(--color-accent)]">{label}</span>
+              </Link>
+            )
+          }
 
           return (
             <Link
@@ -81,18 +95,23 @@ export function TabBar() {
             >
               <div className="relative">
                 <Icon
-                  className={cn(
-                    'h-5 w-5 transition-all',
-                    isActive && 'stroke-[2.5]'
-                  )}
+                  className="h-5 w-5"
+                  strokeWidth={isActive ? 1.75 : 1.25}
                 />
                 {showBadge && (
-                  <span className="absolute -top-1.5 -right-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-destructive px-0.5 text-[9px] font-bold text-destructive-foreground">
+                  <span className="absolute -top-1.5 -right-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-[#D4654A] px-0.5 text-[9px] font-bold text-white">
                     {unreadMessages > 9 ? '9+' : unreadMessages}
                   </span>
                 )}
               </div>
-              <span>{label}</span>
+              <span className="font-[family-name:var(--font-bricolage)]">{label}</span>
+              {/* Active indicator dot */}
+              {isActive && (
+                <span
+                  className="absolute bottom-0.5 h-1 w-1 rounded-full bg-[var(--color-accent)]"
+                  style={{ animation: 'dotIn 0.2s ease both' }}
+                />
+              )}
             </Link>
           )
         })}

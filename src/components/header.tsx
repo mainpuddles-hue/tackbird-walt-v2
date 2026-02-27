@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Bell, Search, Map } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { TackBirdLogo } from '@/components/tackbird-logo'
 import { createClient } from '@/lib/supabase/client'
 import { useI18n } from '@/lib/i18n'
 
@@ -53,51 +54,31 @@ export function Header() {
   }, [supabase])
 
   return (
-    <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-card)]">
       <div className="mx-auto flex h-14 max-w-md items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2">
-          <svg
-            width="28"
-            height="28"
-            viewBox="0 0 32 32"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            className="text-primary"
-          >
-            {/* Pushpin icon */}
-            <circle cx="16" cy="12" r="8" fill="currentColor" opacity="0.15" />
-            <circle cx="16" cy="12" r="4" fill="currentColor" />
-            <line
-              x1="16"
-              y1="16"
-              x2="16"
-              y2="28"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            />
-          </svg>
-          <span className="text-lg font-bold tracking-tight">TackBird</span>
+          <TackBirdLogo size={24} className="text-foreground" />
+          <span className="font-[family-name:var(--font-bricolage)] text-[15px] font-medium tracking-[0.06em] uppercase">TackBird</span>
         </Link>
 
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
             <Link href="/search">
-              <Search className="h-5 w-5" />
+              <Search className="h-[18px] w-[18px] text-[var(--color-muted-foreground)]" strokeWidth={1.5} />
               <span className="sr-only">{t('nav.search')}</span>
             </Link>
           </Button>
           <Button variant="ghost" size="icon" className="h-9 w-9" asChild>
             <Link href="/map">
-              <Map className="h-5 w-5" />
+              <Map className="h-[18px] w-[18px] text-[var(--color-muted-foreground)]" strokeWidth={1.5} />
               <span className="sr-only">{t('nav.map')}</span>
             </Link>
           </Button>
           <Button variant="ghost" size="icon" className="h-9 w-9 relative" asChild>
             <Link href="/notifications">
-              <Bell className="h-5 w-5" />
+              <Bell className="h-[18px] w-[18px] text-[var(--color-muted-foreground)]" strokeWidth={1.5} />
               {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-medium text-destructive-foreground">
+                <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#D4654A] px-1 text-[10px] font-medium text-white">
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}

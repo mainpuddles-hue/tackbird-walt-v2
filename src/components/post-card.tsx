@@ -7,8 +7,7 @@ import { MapPin, Clock, Crown, ImageIcon, ChevronRight, BookOpen, CalendarCheck,
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Pushpin } from '@/components/pushpin'
-import { CATEGORIES, BOARD } from '@/lib/constants'
+import { CATEGORIES } from '@/lib/constants'
 import { cn } from '@/lib/utils'
 import { formatTimeAgo, formatPrice } from '@/lib/format'
 import { useTheme } from 'next-themes'
@@ -41,27 +40,21 @@ export function PostCard({ post }: PostCardProps) {
     <Link href={`/post/${post.id}`}>
       <Card
         className={cn(
-          'overflow-visible transition-all hover:shadow-md hover:-translate-y-0.5',
-          isPro && 'ring-2 ring-amber-400/60'
+          'relative overflow-hidden border border-[var(--color-border)] rounded-2xl transition-all duration-150 ease-in-out',
+          'hover:border-[var(--color-muted-foreground)] hover:shadow-[0_1px_3px_rgba(26,26,46,0.04)]',
+          isPro && 'ring-1 ring-amber-400/40'
         )}
-        style={{
-          borderRadius: '4px',
-          borderTop: `3px solid ${category?.color ?? '#888'}`,
-          boxShadow: isDark ? BOARD.paperShadowDark : BOARD.paperShadow,
-          backgroundColor: isPro
-            ? (isDark ? '#2D2510' : undefined)
-            : (isDark ? (category?.bgDark ?? undefined) : (category?.bgLight ?? undefined)),
-          backgroundImage: isPro && !isDark
-            ? 'linear-gradient(135deg, #FFF8E7 0%, #FFF3D0 100%)'
-            : undefined,
-        }}
+        style={isPro ? {
+          backgroundColor: isDark ? 'rgba(217,165,50,0.06)' : 'rgba(217,165,50,0.04)',
+        } : undefined}
       >
-        {/* Pushpin */}
-        <div className="flex justify-center -mt-2.5 relative z-10">
-          <Pushpin color={isPro ? '#d4a832' : category?.color} size={18} />
-        </div>
+        {/* Left accent bar — TackBird signature */}
+        <div
+          className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-2xl"
+          style={{ backgroundColor: category?.color ?? '#888' }}
+        />
 
-        <CardContent className="p-4 pt-1">
+        <CardContent className="p-4 pl-5">
           {/* Header: avatar + name + time */}
           <div className="flex items-center gap-3 mb-3">
             <Avatar className="h-9 w-9">
@@ -180,7 +173,7 @@ export function PostCard({ post }: PostCardProps) {
 
           {/* CTA button */}
           <div
-            className="flex items-center justify-center gap-1.5 rounded py-2 text-xs font-medium transition-colors"
+            className="flex items-center justify-center gap-1.5 rounded py-2 text-xs font-medium transition-all duration-150 hover:opacity-80"
             style={{
               backgroundColor: `${category?.color}12`,
               color: category?.color,

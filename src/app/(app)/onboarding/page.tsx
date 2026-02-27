@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { CircleCheck } from 'lucide-react'
+import { TackBirdLogo } from '@/components/tackbird-logo'
 import { cn } from '@/lib/utils'
 import { NEIGHBORHOODS } from '@/lib/constants'
 import { toast } from 'sonner'
@@ -69,72 +69,111 @@ export default function OnboardingPage() {
 
   // Step 0: Welcome
   if (step === 0) return (
-    <div className="flex min-h-dvh flex-col items-center justify-center p-8">
-      <svg width="72" height="72" viewBox="0 0 32 32" fill="none" className="mb-4 text-primary">
-        <circle cx="16" cy="12" r="8" fill="currentColor" opacity="0.15" />
-        <circle cx="16" cy="12" r="4" fill="currentColor" />
-        <line x1="16" y1="16" x2="16" y2="28" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" />
-      </svg>
-      <h1 className="text-2xl font-bold tracking-tight mb-2">Tervetuloa TackBirdiin!</h1>
-      <p className="text-sm text-muted-foreground text-center mb-1">
+    <div className="flex min-h-dvh flex-col items-center justify-center p-8 animate-page-in">
+      <div style={{ animation: 'fadeIn 0.5s ease-out both' }}>
+        <TackBirdLogo size={72} className="text-primary mb-4 mx-auto" />
+      </div>
+      <h1
+        className="text-2xl font-bold tracking-tight mb-2"
+        style={{ animation: 'fadeIn 0.5s ease-out 0.1s both' }}
+      >
+        Tervetuloa TackBirdiin!
+      </h1>
+      <p
+        className="text-sm text-muted-foreground text-center mb-1"
+        style={{ animation: 'fadeIn 0.5s ease-out 0.15s both' }}
+      >
         Naapurustosi ilmoitustaulu — pyydä apua, tarjoa palveluksia ja lainaa tavaroita.
       </p>
-      <p className="text-xs text-muted-foreground text-center mb-8">
+      <p
+        className="text-xs text-muted-foreground text-center mb-8"
+        style={{ animation: 'fadeIn 0.5s ease-out 0.2s both' }}
+      >
         Kerro meille muutama asia itsestäsi, jotta naapurit löytävät sinut.
       </p>
-      <Button onClick={() => setStep(1)} className="w-full max-w-[280px]">
-        Aloitetaan!
-      </Button>
-      <button
-        onClick={handleSkip}
-        disabled={saving}
-        className="mt-3 text-sm text-muted-foreground hover:text-foreground"
-      >
-        Ohita
-      </button>
+      <div style={{ animation: 'fadeIn 0.5s ease-out 0.25s both' }}>
+        <Button onClick={() => setStep(1)} className="w-full max-w-[280px]">
+          Aloitetaan!
+        </Button>
+        <button
+          onClick={handleSkip}
+          disabled={saving}
+          className="mt-3 block w-full text-center text-sm text-muted-foreground hover:text-foreground"
+        >
+          Ohita
+        </button>
+      </div>
     </div>
   )
 
   // Step 1: Neighborhood
   if (step === 1) return (
-    <div className="flex min-h-dvh flex-col items-center justify-center p-8">
-      <h2 className="text-xl font-bold mb-1">Missä asut?</h2>
-      <p className="text-xs text-muted-foreground mb-6">Valitse naapurustosi</p>
+    <div className="flex min-h-dvh flex-col items-center justify-center p-8 animate-page-in">
+      <h2
+        className="text-xl font-bold mb-1"
+        style={{ animation: 'fadeIn 0.4s ease-out both' }}
+      >
+        Missä asut?
+      </h2>
+      <p
+        className="text-xs text-muted-foreground mb-6"
+        style={{ animation: 'fadeIn 0.4s ease-out 0.05s both' }}
+      >
+        Valitse naapurustosi
+      </p>
       <div className="grid grid-cols-2 gap-2 w-full max-w-[300px]">
-        {NEIGHBORHOODS.slice(0, 12).map((n) => (
+        {NEIGHBORHOODS.slice(0, 12).map((n, i) => (
           <button
             key={n}
             onClick={() => setNaapurusto(n)}
             className={cn(
               'rounded-xl p-3 text-sm font-semibold transition-all border',
               naapurusto === n
-                ? 'border-primary bg-primary/10 text-primary'
-                : 'border-border bg-card text-foreground hover:bg-muted'
+                ? 'border-primary bg-primary/10 text-primary scale-[1.02]'
+                : 'border-border bg-card text-foreground hover:bg-muted hover:scale-[1.01]'
             )}
+            style={{
+              animation: `fadeIn 0.35s ease-out ${50 + i * 30}ms both`,
+            }}
           >
             {n}
           </button>
         ))}
       </div>
-      <Button
-        onClick={() => setStep(2)}
-        disabled={!naapurusto}
-        className="w-full max-w-[280px] mt-6"
-      >
-        Jatka
-      </Button>
-      <button onClick={() => setStep(0)} className="mt-3 text-sm text-muted-foreground">
-        Takaisin
-      </button>
+      <div style={{ animation: 'fadeIn 0.4s ease-out 0.4s both' }}>
+        <Button
+          onClick={() => setStep(2)}
+          disabled={!naapurusto}
+          className="w-full max-w-[280px] mt-6"
+        >
+          Jatka
+        </Button>
+        <button onClick={() => setStep(0)} className="mt-3 block w-full text-center text-sm text-muted-foreground">
+          Takaisin
+        </button>
+      </div>
     </div>
   )
 
   // Step 2: Name + Bio
   if (step === 2) return (
-    <div className="flex min-h-dvh flex-col items-center justify-center p-8">
-      <h2 className="text-xl font-bold mb-1">Profiilisi</h2>
-      <p className="text-xs text-muted-foreground mb-6">Miten näyt naapureille?</p>
-      <div className="w-full max-w-[300px] space-y-4">
+    <div className="flex min-h-dvh flex-col items-center justify-center p-8 animate-page-in">
+      <h2
+        className="text-xl font-bold mb-1"
+        style={{ animation: 'fadeIn 0.4s ease-out both' }}
+      >
+        Profiilisi
+      </h2>
+      <p
+        className="text-xs text-muted-foreground mb-6"
+        style={{ animation: 'fadeIn 0.4s ease-out 0.05s both' }}
+      >
+        Miten näyt naapureille?
+      </p>
+      <div
+        className="w-full max-w-[300px] space-y-4"
+        style={{ animation: 'fadeIn 0.4s ease-out 0.1s both' }}
+      >
         <Input
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -149,29 +188,44 @@ export default function OnboardingPage() {
           maxLength={500}
         />
       </div>
-      <Button
-        onClick={() => setStep(3)}
-        disabled={!name}
-        className="w-full max-w-[280px] mt-6"
-      >
-        Jatka
-      </Button>
-      <button onClick={() => setStep(1)} className="mt-3 text-sm text-muted-foreground">
-        Takaisin
-      </button>
+      <div style={{ animation: 'fadeIn 0.4s ease-out 0.2s both' }}>
+        <Button
+          onClick={() => setStep(3)}
+          disabled={!name}
+          className="w-full max-w-[280px] mt-6"
+        >
+          Jatka
+        </Button>
+        <button onClick={() => setStep(1)} className="mt-3 block w-full text-center text-sm text-muted-foreground">
+          Takaisin
+        </button>
+      </div>
     </div>
   )
 
   // Step 3: Confirmation
   return (
-    <div className="flex min-h-dvh flex-col items-center justify-center p-8">
-      <CircleCheck className="h-16 w-16 text-primary mb-4" strokeWidth={1.5} />
-      <h2 className="text-xl font-bold mb-2">Kaikki valmista!</h2>
-      <p className="text-sm text-muted-foreground text-center mb-6">
+    <div className="flex min-h-dvh flex-col items-center justify-center p-8 animate-page-in">
+      <div style={{ animation: 'fadeIn 0.5s ease-out both' }}>
+        <TackBirdLogo size={64} className="text-primary mb-4 mx-auto" />
+      </div>
+      <h2
+        className="text-xl font-bold mb-2"
+        style={{ animation: 'fadeIn 0.4s ease-out 0.15s both' }}
+      >
+        Kaikki valmista!
+      </h2>
+      <p
+        className="text-sm text-muted-foreground text-center mb-6"
+        style={{ animation: 'fadeIn 0.4s ease-out 0.2s both' }}
+      >
         Profiilisi on luotu. Voit nyt selata ilmoituksia.
       </p>
 
-      <div className="w-full max-w-[280px] rounded-xl border bg-card p-5 text-center mb-6">
+      <div
+        className="w-full max-w-[280px] rounded-xl border bg-card p-5 text-center mb-6"
+        style={{ animation: 'fadeIn 0.4s ease-out 0.25s both' }}
+      >
         <div className="text-3xl mb-2">
           {name.charAt(0).toUpperCase()}
         </div>
@@ -180,16 +234,18 @@ export default function OnboardingPage() {
         {bio && <p className="text-xs text-muted-foreground mt-2">{bio}</p>}
       </div>
 
-      <Button
-        onClick={handleFinish}
-        disabled={saving}
-        className="w-full max-w-[280px]"
-      >
-        {saving ? 'Tallennetaan...' : 'Aloita selaaminen'}
-      </Button>
-      <button onClick={() => setStep(2)} className="mt-3 text-sm text-muted-foreground">
-        Muokkaa profiilia
-      </button>
+      <div style={{ animation: 'fadeIn 0.4s ease-out 0.3s both' }}>
+        <Button
+          onClick={handleFinish}
+          disabled={saving}
+          className="w-full max-w-[280px]"
+        >
+          {saving ? 'Tallennetaan...' : 'Aloita selaaminen'}
+        </Button>
+        <button onClick={() => setStep(2)} className="mt-3 block w-full text-center text-sm text-muted-foreground">
+          Muokkaa profiilia
+        </button>
+      </div>
     </div>
   )
 }

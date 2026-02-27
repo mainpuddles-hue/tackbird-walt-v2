@@ -27,12 +27,12 @@ export function ScrollToTop() {
       size="icon"
       onClick={scrollToTop}
       className={cn(
-        'fixed bottom-24 right-4 z-40 h-10 w-10 rounded-full shadow-lg bg-background transition-opacity duration-300',
+        'fixed bottom-24 right-4 z-40 h-11 w-11 rounded-full bg-[var(--color-foreground)] border-none transition-opacity duration-200',
         visible ? 'opacity-100' : 'opacity-0 pointer-events-none'
       )}
       aria-label="Takaisin ylös"
     >
-      <ArrowUp className="h-4 w-4" />
+      <ArrowUp className="h-5 w-5 text-[var(--color-card)]" strokeWidth={1.5} />
     </Button>
   )
 }

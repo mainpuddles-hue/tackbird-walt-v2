@@ -11,61 +11,53 @@ export const CATEGORIES: Record<PostType, {
   tarvitsen: {
     label: 'Tarvitsen',
     icon: 'HandHelping',
-    color: '#FF6B35',
-    bgLight: '#FFF8F3',
-    bgDark: '#2D1B10',
+    color: '#C75B3A',
+    bgLight: '#FDF0EB',
+    bgDark: '#2A1A15',
   },
   tarjoan: {
     label: 'Tarjoan',
     icon: 'Gift',
-    color: '#8B5CF6',
-    bgLight: '#FBF8FF',
-    bgDark: '#1A1025',
+    color: '#7C5CBF',
+    bgLight: '#F4EFFF',
+    bgDark: '#1A1525',
   },
   ilmaista: {
     label: 'Ilmaista',
     icon: 'Heart',
-    color: '#3B82F6',
-    bgLight: '#F8FBFF',
-    bgDark: '#0F1A2D',
+    color: '#3B7DD8',
+    bgLight: '#EBF2FE',
+    bgDark: '#101A2D',
   },
   nappaa: {
     label: 'Nappaa!',
     icon: 'Zap',
-    color: '#EF4444',
-    bgLight: '#FFF6F6',
-    bgDark: '#2D0F0F',
+    color: '#C43C3C',
+    bgLight: '#FDECEC',
+    bgDark: '#2D1010',
   },
   lainaa: {
     label: 'Lainaa',
     icon: 'BookOpen',
-    color: '#F59E0B',
-    bgLight: '#FFFCF0',
-    bgDark: '#2D2510',
+    color: '#C98B2E',
+    bgLight: '#FDF6E8',
+    bgDark: '#2D2010',
   },
   tapahtuma: {
     label: 'Tapahtuma',
     icon: 'CalendarDays',
-    color: '#10B981',
-    bgLight: '#F5FFF9',
-    bgDark: '#0F2D1A',
+    color: '#2B8A62',
+    bgLight: '#E8F7EF',
+    bgDark: '#102D1A',
   },
   tilannehuone: {
     label: 'Tilannehuone',
     icon: 'AlertTriangle',
-    color: '#06B6D4',
-    bgLight: '#F4FFFE',
-    bgDark: '#0F2D2B',
+    color: '#1E8CA0',
+    bgLight: '#E6F6FA',
+    bgDark: '#102D2B',
   },
 }
-
-// Bulletin-board design tokens
-export const BOARD = {
-  boardBg: '#ede5d5',
-  boardBgDark: '#1a1815',
-  paperShadow: '0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05)',
-  paperShadowDark: '0 2px 8px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2)',
-} as const
 
 // Badge configuration
 export const BADGES = {
