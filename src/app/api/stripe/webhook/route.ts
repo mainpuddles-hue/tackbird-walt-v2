@@ -62,6 +62,12 @@ export async function POST(request: NextRequest) {
         const session = event.data.object as Stripe.Checkout.Session
         const metadata = session.metadata || {}
 
+        // Only process fully paid sessions — async payment methods may not be paid yet
+        if (session.payment_status !== 'paid') {
+          console.log(`[webhook] Skipping unpaid checkout session ${session.id} (status: ${session.payment_status})`)
+          break
+        }
+
         if (metadata.type === 'rental' && metadata.booking_id) {
           await handleRentalPayment(admin, session, metadata.booking_id)
         } else if (metadata.type === 'ad' && metadata.ad_id) {

@@ -66,6 +66,7 @@ export async function POST(
     await admin.from('notifications').insert([
       {
         user_id: booking.borrower_id,
+        from_user_id: user.id,
         type: 'rental_refunded',
         title: 'Varaus hyvitetty',
         body: 'Riitautettu varaus on hyvitetty',
@@ -74,6 +75,7 @@ export async function POST(
       },
       {
         user_id: booking.lender_id,
+        from_user_id: user.id,
         type: 'rental_refunded',
         title: 'Varaus hyvitetty',
         body: 'Riitautettu varaus on hyvitetty',

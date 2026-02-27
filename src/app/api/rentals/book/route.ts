@@ -31,6 +31,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid date format' }, { status: 400 })
     }
 
+    // Start date must be today or later
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+    if (startMs < todayStart.getTime()) {
+      return NextResponse.json({ error: 'Start date cannot be in the past' }, { status: 400 })
+    }
+
     if (endMs <= startMs) {
       return NextResponse.json({ error: 'End date must be after start date' }, { status: 400 })
     }
@@ -70,6 +77,9 @@ export async function POST(request: NextRequest) {
 
     const commissionRate = lender?.is_pro ? COMMISSION_RATE_PRO : COMMISSION_RATE
     const totalFee = Math.round(days * Number(post.daily_fee) * 100) / 100
+    if (totalFee > 100000) {
+      return NextResponse.json({ error: 'Total fee exceeds maximum (100 000 €)' }, { status: 400 })
+    }
     const commission = Math.round(totalFee * commissionRate * 100) / 100
 
     // Check for overlapping bookings
@@ -79,7 +89,7 @@ export async function POST(request: NextRequest) {
       .eq('post_id', post_id)
       .in('status', ['pending', 'confirmed', 'paid'])
       .lt('start_date', end_date)
-      .gt('end_date', start_date)
+      .gte('end_date', start_date)
       .limit(1)
 
     if (overlap && overlap.length > 0) {

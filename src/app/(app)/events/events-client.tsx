@@ -147,6 +147,10 @@ export function EventsClient({ events: initialEvents, currentUserId }: EventsCli
     const event = events.find((e) => e.id === eventId)
     if (!event) return
 
+    // Snapshot current state for rollback
+    const prevEvents = events
+    const prevSelected = selectedEvent
+
     // Optimistic update
     setEvents((prev) =>
       prev.map((e) =>
@@ -173,19 +177,22 @@ export function EventsClient({ events: initialEvents, currentUserId }: EventsCli
 
     try {
       if (event.is_attending) {
-        await supabase
+        const { error } = await supabase
           .from('event_attendees')
           .delete()
           .eq('event_id', eventId)
           .eq('user_id', currentUserId)
+        if (error) throw error
       } else {
-        await supabase
+        const { error } = await supabase
           .from('event_attendees')
           .insert({ event_id: eventId, user_id: currentUserId })
+        if (error) throw error
       }
     } catch {
-      // Rollback
-      setEvents(initialEvents)
+      // Rollback to snapshot (not initial prop — preserves other optimistic updates)
+      setEvents(prevEvents)
+      setSelectedEvent(prevSelected)
       toast.error('Osallistuminen epäonnistui')
     }
   }

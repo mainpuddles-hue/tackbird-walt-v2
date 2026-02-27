@@ -15,8 +15,10 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const limit = Math.min(Math.max(parseInt(searchParams.get('limit') || '20', 10), 1), 50)
-    const offset = Math.max(parseInt(searchParams.get('offset') || '0', 10), 0)
+    const rawLimit = parseInt(searchParams.get('limit') || '20', 10)
+    const rawOffset = parseInt(searchParams.get('offset') || '0', 10)
+    const limit = Math.min(Math.max(Number.isNaN(rawLimit) ? 20 : rawLimit, 1), 50)
+    const offset = Math.max(Number.isNaN(rawOffset) ? 0 : rawOffset, 0)
 
     const { data: notifications, error } = await supabase
       .from('notifications')

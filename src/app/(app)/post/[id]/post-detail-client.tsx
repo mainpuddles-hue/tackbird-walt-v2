@@ -120,19 +120,23 @@ export function PostDetailClient({
     }
     if (isOwn) return
 
-    // Find or create conversation
-    const { data: existing } = await supabase
-      .from('conversations')
-      .select('id')
-      .or(
-        `and(user1_id.eq.${currentUserId},user2_id.eq.${post.user_id}),and(user1_id.eq.${post.user_id},user2_id.eq.${currentUserId})`
-      )
-      .limit(1)
-      .single()
+    try {
+      // Find existing conversation — use maybeSingle() to avoid throw on 0 rows
+      const { data: existing } = await supabase
+        .from('conversations')
+        .select('id')
+        .or(
+          `and(user1_id.eq.${currentUserId},user2_id.eq.${post.user_id}),and(user1_id.eq.${post.user_id},user2_id.eq.${currentUserId})`
+        )
+        .limit(1)
+        .maybeSingle()
 
-    if (existing) {
-      router.push(`/messages/${existing.id}`)
-    } else {
+      if (existing) {
+        router.push(`/messages/${existing.id}`)
+        return
+      }
+
+      // Create new conversation — handle unique constraint race condition
       const { data: newConv, error } = await supabase
         .from('conversations')
         .insert({
@@ -144,10 +148,26 @@ export function PostDetailClient({
         .single()
 
       if (error) {
+        // Race condition: another request created it — re-fetch
+        const { data: retry } = await supabase
+          .from('conversations')
+          .select('id')
+          .or(
+            `and(user1_id.eq.${currentUserId},user2_id.eq.${post.user_id}),and(user1_id.eq.${post.user_id},user2_id.eq.${currentUserId})`
+          )
+          .limit(1)
+          .maybeSingle()
+
+        if (retry) {
+          router.push(`/messages/${retry.id}`)
+          return
+        }
         toast.error('Keskustelun luonti epäonnistui')
         return
       }
       router.push(`/messages/${newConv.id}`)
+    } catch {
+      toast.error('Keskustelun luonti epäonnistui')
     }
   }
 

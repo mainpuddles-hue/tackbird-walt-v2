@@ -40,6 +40,12 @@ const BRAND_COLOR = '#16a34a' // green-600
 const APP_NAME = 'TackBird'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
 
+/** Escape user-provided strings to prevent HTML injection in email templates */
+const HTML_ESCAPE_MAP: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
+function esc(str: string): string {
+  return String(str).replace(/[&<>"']/g, (c) => HTML_ESCAPE_MAP[c] || c)
+}
+
 if (!process.env.NEXT_PUBLIC_APP_URL && process.env.NODE_ENV === 'production') {
   console.warn('[email] NEXT_PUBLIC_APP_URL is not set — email links will point to localhost!')
 }
@@ -182,7 +188,7 @@ export async function sendWelcomeEmail(
   name: string
 ): Promise<boolean> {
   const body = `
-    <h2 style="margin:0 0 16px;font-size:20px;">Tervetuloa ${APP_NAME}iin, ${name}!</h2>
+    <h2 style="margin:0 0 16px;font-size:20px;">Tervetuloa ${APP_NAME}iin, ${esc(name)}!</h2>
     <p>Hienoa, ett&auml; liityit naapuruston avuverkostoon. T&auml;ss&auml; muutama vinkki alkuun:</p>
     <ul style="padding-left:20px;">
       <li><strong>Selaa ilmoituksia</strong> &mdash; etsik&ouml; jotain hyödyllistä l&auml;heltä.</li>
@@ -215,15 +221,15 @@ export async function sendBookingConfirmation(
     <table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
       <tr>
         <td style="padding:8px 0;border-bottom:1px solid #e4e4e7;color:#71717a;">Kohde</td>
-        <td style="padding:8px 0;border-bottom:1px solid #e4e4e7;font-weight:600;">${data.postTitle}</td>
+        <td style="padding:8px 0;border-bottom:1px solid #e4e4e7;font-weight:600;">${esc(data.postTitle)}</td>
       </tr>
       <tr>
         <td style="padding:8px 0;border-bottom:1px solid #e4e4e7;color:#71717a;">Alkup&auml;iv&auml;</td>
-        <td style="padding:8px 0;border-bottom:1px solid #e4e4e7;">${data.startDate}</td>
+        <td style="padding:8px 0;border-bottom:1px solid #e4e4e7;">${esc(data.startDate)}</td>
       </tr>
       <tr>
         <td style="padding:8px 0;border-bottom:1px solid #e4e4e7;color:#71717a;">Loppup&auml;iv&auml;</td>
-        <td style="padding:8px 0;border-bottom:1px solid #e4e4e7;">${data.endDate}</td>
+        <td style="padding:8px 0;border-bottom:1px solid #e4e4e7;">${esc(data.endDate)}</td>
       </tr>
       <tr>
         <td style="padding:8px 0;color:#71717a;">Yhteens&auml;</td>
@@ -249,7 +255,7 @@ export async function sendBookingCancellation(
 ): Promise<boolean> {
   const body = `
     <h2 style="margin:0 0 16px;font-size:20px;">Varaus peruutettu</h2>
-    <p>Varaus kohteelle <strong>${data.postTitle}</strong> on peruutettu.</p>
+    <p>Varaus kohteelle <strong>${esc(data.postTitle)}</strong> on peruutettu.</p>
     <p>Jos t&auml;m&auml; ei ollut odotettua, ota yhteytt&auml; toiseen osapuoleen viestill&auml; sovelluksessa.</p>
     <p style="margin-top:24px;">
       <a href="${APP_URL}" style="display:inline-block;padding:12px 28px;background:${BRAND_COLOR};color:#fff;border-radius:8px;text-decoration:none;font-weight:600;">
@@ -275,19 +281,19 @@ export async function sendBookingRequest(
 ): Promise<boolean> {
   const body = `
     <h2 style="margin:0 0 16px;font-size:20px;">Uusi lainausvaraus</h2>
-    <p><strong>${data.borrowerName}</strong> haluaa lainata kohdettasi:</p>
+    <p><strong>${esc(data.borrowerName)}</strong> haluaa lainata kohdettasi:</p>
     <table style="width:100%;border-collapse:collapse;margin:16px 0 20px;">
       <tr>
         <td style="padding:8px 0;border-bottom:1px solid #e4e4e7;color:#71717a;">Kohde</td>
-        <td style="padding:8px 0;border-bottom:1px solid #e4e4e7;font-weight:600;">${data.postTitle}</td>
+        <td style="padding:8px 0;border-bottom:1px solid #e4e4e7;font-weight:600;">${esc(data.postTitle)}</td>
       </tr>
       <tr>
         <td style="padding:8px 0;border-bottom:1px solid #e4e4e7;color:#71717a;">Alkup&auml;iv&auml;</td>
-        <td style="padding:8px 0;border-bottom:1px solid #e4e4e7;">${data.startDate}</td>
+        <td style="padding:8px 0;border-bottom:1px solid #e4e4e7;">${esc(data.startDate)}</td>
       </tr>
       <tr>
         <td style="padding:8px 0;border-bottom:1px solid #e4e4e7;color:#71717a;">Loppup&auml;iv&auml;</td>
-        <td style="padding:8px 0;border-bottom:1px solid #e4e4e7;">${data.endDate}</td>
+        <td style="padding:8px 0;border-bottom:1px solid #e4e4e7;">${esc(data.endDate)}</td>
       </tr>
       <tr>
         <td style="padding:8px 0;color:#71717a;">Yhteens&auml;</td>
@@ -301,7 +307,7 @@ export async function sendBookingRequest(
       </a>
     </p>
   `
-  return sendEmail(email, `Uusi lainausvaraus: ${data.postTitle}`, wrapHtml('Uusi lainausvaraus', body))
+  return sendEmail(email, `Uusi lainausvaraus: ${esc(data.postTitle)}`, wrapHtml('Uusi lainausvaraus', body))
 }
 
 /**
@@ -316,9 +322,9 @@ export async function sendNewMessageEmail(
     data.preview.length > 200 ? data.preview.slice(0, 200) + '...' : data.preview
 
   const body = `
-    <h2 style="margin:0 0 16px;font-size:20px;">Uusi viesti k&auml;ytt&auml;j&auml;lt&auml; ${data.senderName}</h2>
+    <h2 style="margin:0 0 16px;font-size:20px;">Uusi viesti k&auml;ytt&auml;j&auml;lt&auml; ${esc(data.senderName)}</h2>
     <div style="background:#f4f4f5;border-radius:8px;padding:16px;margin-bottom:20px;">
-      <p style="margin:0;color:#3f3f46;font-style:italic;">&ldquo;${preview}&rdquo;</p>
+      <p style="margin:0;color:#3f3f46;font-style:italic;">&ldquo;${esc(preview)}&rdquo;</p>
     </div>
     <p>Vastaa viestiin avaamalla sovellus.</p>
     <p style="margin-top:24px;">
@@ -327,5 +333,5 @@ export async function sendNewMessageEmail(
       </a>
     </p>
   `
-  return sendEmail(email, `Uusi viesti: ${data.senderName}`, wrapHtml('Uusi viesti', body))
+  return sendEmail(email, `Uusi viesti: ${esc(data.senderName)}`, wrapHtml('Uusi viesti', body))
 }

@@ -39,6 +39,17 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
+    // Idempotency: if already completed, return early
+    const { data: existingProfile } = await supabaseAdmin
+      .from('profiles')
+      .select('onboarding_completed')
+      .eq('id', user.id)
+      .single()
+
+    if (existingProfile?.onboarding_completed) {
+      return NextResponse.json({ ok: true })
+    }
+
     if (skip) {
       // Skip onboarding — just mark as completed
       const { error } = await supabaseAdmin

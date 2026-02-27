@@ -97,28 +97,49 @@ export function UserProfileClient({
       return
     }
 
-    const { data: existing } = await supabase
-      .from('conversations')
-      .select('id')
-      .or(
-        `and(user1_id.eq.${currentUserId},user2_id.eq.${profile.id}),and(user1_id.eq.${profile.id},user2_id.eq.${currentUserId})`
-      )
-      .limit(1)
-      .single()
+    try {
+      // Use maybeSingle() — returns null for 0 rows instead of throwing
+      const { data: existing } = await supabase
+        .from('conversations')
+        .select('id')
+        .or(
+          `and(user1_id.eq.${currentUserId},user2_id.eq.${profile.id}),and(user1_id.eq.${profile.id},user2_id.eq.${currentUserId})`
+        )
+        .limit(1)
+        .maybeSingle()
 
-    if (existing) {
-      router.push(`/messages/${existing.id}`)
-    } else {
+      if (existing) {
+        router.push(`/messages/${existing.id}`)
+        return
+      }
+
       const { data: newConv, error } = await supabase
         .from('conversations')
         .insert({ user1_id: currentUserId, user2_id: profile.id })
         .select('id')
         .single()
+
       if (error) {
+        // Race condition: another request created it — re-fetch
+        const { data: retry } = await supabase
+          .from('conversations')
+          .select('id')
+          .or(
+            `and(user1_id.eq.${currentUserId},user2_id.eq.${profile.id}),and(user1_id.eq.${profile.id},user2_id.eq.${currentUserId})`
+          )
+          .limit(1)
+          .maybeSingle()
+
+        if (retry) {
+          router.push(`/messages/${retry.id}`)
+          return
+        }
         toast.error('Keskustelun luonti epäonnistui')
         return
       }
       router.push(`/messages/${newConv.id}`)
+    } catch {
+      toast.error('Keskustelun luonti epäonnistui')
     }
   }
 

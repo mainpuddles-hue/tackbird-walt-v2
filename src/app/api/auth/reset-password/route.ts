@@ -16,6 +16,14 @@ export async function POST(request: Request) {
       )
     }
 
+    // Must match registration requirements: uppercase letter + number
+    if (!/[A-Z]/.test(password) || !/[0-9]/.test(password)) {
+      return NextResponse.json(
+        { error: 'Salasanassa tulee olla vähintään yksi iso kirjain ja yksi numero' },
+        { status: 400 }
+      )
+    }
+
     const supabase = await createClient()
 
     const { data: { user } } = await supabase.auth.getUser()
