@@ -183,7 +183,7 @@
   },
   "onboarding": {
     "welcome": "Tervetuloa TackBirdiin!",
-    "subtitle": "Naapuriapua l\u00e4hell\u00e4si",
+    "subtitle": "Naapuruston jakamisalusta",
     "letsStart": "Aloitetaan",
     "skip": "Ohita",
     "whereDoYouLive": "Miss\u00e4 asut?",
@@ -246,7 +246,7 @@
   },
   "tutorial": {
     "welcomeTitle": "Tervetuloa TackBirdiin!",
-    "welcomeSubtitle": "Naapurustosi oma ilmoitustaulu",
+    "welcomeSubtitle": "Naapuruston jakamisalusta",
     "shareTitle": "Jaa, lainaa ja auta",
     "shareSubtitle": "Tarjoa tavaroita, palveluja ja apua naapureillesi",
     "eventsTitle": "Tapahtumat",

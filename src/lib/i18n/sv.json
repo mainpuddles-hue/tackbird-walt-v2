@@ -80,7 +80,7 @@
   },
   "tutorial": {
     "welcomeTitle": "Välkommen till TackBird!",
-    "welcomeSubtitle": "Ditt grannskap anslagstavla",
+    "welcomeSubtitle": "Grannskapets delningsplattform",
     "shareTitle": "Dela, låna och hjälp",
     "shareSubtitle": "Erbjud saker, tjänster och hjälp till dina grannar",
     "eventsTitle": "Evenemang",
@@ -235,7 +235,7 @@
   },
   "onboarding": {
     "welcome": "V\u00e4lkommen till TackBird!",
-    "subtitle": "Grannhj\u00e4lp n\u00e4ra dig",
+    "subtitle": "Grannskapets delningsplattform",
     "letsStart": "L\u00e5t oss b\u00f6rja",
     "skip": "Hoppa \u00f6ver",
     "whereDoYouLive": "Var bor du?",

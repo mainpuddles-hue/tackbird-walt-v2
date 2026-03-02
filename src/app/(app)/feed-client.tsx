@@ -240,8 +240,9 @@ export function FeedClient({ initialPosts }: FeedClientProps) {
       {/* Hero banner */}
       {!activeFilter && filteredPosts.length > 0 && (
         <div className="rounded-2xl bg-primary p-5 text-white mb-4">
-          <h2 className="text-lg font-bold mb-1">Tarvitsetko apua?</h2>
-          <p className="text-sm text-white/80 mb-3">Naapurit auttavat! Luo ilmoitus ja saat apua läheltä.</p>
+          <p className="text-[11px] text-white/60 font-medium uppercase tracking-wider mb-1">Naapuruston jakamisalusta</p>
+          <h2 className="text-lg font-bold mb-1">Naapurin apu ei ole koskaan ollut lähempänä</h2>
+          <p className="text-sm text-white/80 mb-3">Jaa, lainaa ja auta — kaikki alkaa yhdestä ilmoituksesta.</p>
           <Link href="/create" className="inline-flex items-center gap-1.5 rounded-full bg-white text-primary px-4 py-2 text-sm font-medium hover:bg-white/90 transition-colors">
             Luo ilmoitus <ChevronRight className="h-4 w-4" />
           </Link>

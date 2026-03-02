@@ -11,8 +11,8 @@ const roboto = Roboto({
 })
 
 export const metadata: Metadata = {
-  title: 'TackBird — Naapuriapu',
-  description: 'Naapurustosi ilmoitustaulu — pyydä apua, tarjoa palveluksia, lainaa tavaroita ja löydä tapahtumia.',
+  title: 'TackBird — Naapuruston jakamisalusta',
+  description: 'Naapurin apu ei ole koskaan ollut lähempänä. Jaa, lainaa, auta ja löydä naapurustosi tapahtumat.',
   manifest: '/manifest.json',
   icons: {
     icon: '/favicon.ico',

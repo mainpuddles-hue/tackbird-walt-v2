@@ -177,7 +177,8 @@ export default function LoginPage() {
           <TackBirdLogo size={56} className="text-primary" />
           <div className="text-center">
             <h1 className="text-xl font-semibold tracking-wide">TackBird</h1>
-            <p className="text-sm text-muted-foreground mt-1">Naapurustosi ilmoitustaulu</p>
+            <p className="text-[13px] text-muted-foreground mt-1">Naapuruston jakamisalusta</p>
+            <p className="text-[11px] text-muted-foreground/70 mt-0.5 italic">Naapurin apu ei ole koskaan ollut lähempänä</p>
           </div>
         </div>
 

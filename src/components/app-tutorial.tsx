@@ -26,7 +26,7 @@ const slides: Slide[] = [
     titleKey: 'tutorial.welcomeTitle',
     titleFallback: 'Tervetuloa TackBirdiin!',
     descKey: 'tutorial.welcomeSubtitle',
-    descFallback: 'Naapurustosi oma ilmoitustaulu',
+    descFallback: 'Naapuruston jakamisalusta',
   },
   {
     id: 'share',

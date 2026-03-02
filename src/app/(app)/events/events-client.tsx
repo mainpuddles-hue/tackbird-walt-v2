@@ -212,20 +212,25 @@ export function EventsClient({ events: initialEvents, currentUserId }: EventsCli
           .eq('user_id', currentUserId)
         if (error) throw error
 
-        // Remove from group conversation
-        const { data: groupConv } = await supabase
-          .from('conversations')
-          .select('id')
-          .eq('event_id', eventId)
-          .eq('is_group', true)
-          .maybeSingle()
+        // Remove from group conversation (non-blocking)
+        try {
+          const { data: groupConv } = await supabase
+            .from('conversations')
+            .select('id')
+            .eq('event_id', eventId)
+            .eq('is_group', true)
+            .maybeSingle()
 
-        if (groupConv) {
-          await supabase
-            .from('conversation_members')
-            .delete()
-            .eq('conversation_id', groupConv.id)
-            .eq('user_id', currentUserId)
+          if (groupConv) {
+            await supabase
+              .from('conversation_members')
+              .delete()
+              .eq('conversation_id', groupConv.id)
+              .eq('user_id', currentUserId)
+          }
+        } catch {
+          // Group chat cleanup failed — not critical
+          console.warn('Group conversation cleanup failed for event', eventId)
         }
       } else {
         // Attend: join event
@@ -234,58 +239,66 @@ export function EventsClient({ events: initialEvents, currentUserId }: EventsCli
           .insert({ event_id: eventId, user_id: currentUserId })
         if (error) throw error
 
-        // Create or join group conversation
-        let { data: groupConv } = await supabase
-          .from('conversations')
-          .select('id')
-          .eq('event_id', eventId)
-          .eq('is_group', true)
-          .maybeSingle()
-
-        if (!groupConv) {
-          const { data: newConv, error: convError } = await supabase
+        // Create or join group conversation (non-blocking)
+        try {
+          let { data: groupConv } = await supabase
             .from('conversations')
-            .insert({
-              is_group: true,
-              event_id: eventId,
-              group_name: event.title,
-              group_emoji: event.icon || '📅',
-            })
             .select('id')
-            .single()
-          if (convError) throw convError
-          groupConv = newConv
-        }
+            .eq('event_id', eventId)
+            .eq('is_group', true)
+            .maybeSingle()
 
-        if (groupConv) {
-          // Add as member (upsert to avoid duplicates)
-          await supabase
-            .from('conversation_members')
-            .upsert(
-              { conversation_id: groupConv.id, user_id: currentUserId },
-              { onConflict: 'conversation_id,user_id' }
-            )
+          if (!groupConv) {
+            const { data: newConv, error: convError } = await supabase
+              .from('conversations')
+              .insert({
+                user1_id: currentUserId,
+                is_group: true,
+                event_id: eventId,
+                group_name: event.title,
+                group_emoji: event.icon || '📅',
+              })
+              .select('id')
+              .single()
+            if (convError) throw convError
+            groupConv = newConv
+          }
 
-          // Send system message
-          await supabase.from('messages').insert({
-            conversation_id: groupConv.id,
-            sender_id: currentUserId,
-            content: 'liittyi keskusteluun',
-            is_system: true,
-          })
+          if (groupConv) {
+            // Add as member (upsert to avoid duplicates)
+            await supabase
+              .from('conversation_members')
+              .upsert(
+                { conversation_id: groupConv.id, user_id: currentUserId },
+                { onConflict: 'conversation_id,user_id' }
+              )
 
-          // Update conversation updated_at
-          await supabase
-            .from('conversations')
-            .update({ updated_at: new Date().toISOString() })
-            .eq('id', groupConv.id)
+            // Send system message
+            await supabase.from('messages').insert({
+              conversation_id: groupConv.id,
+              sender_id: currentUserId,
+              content: 'liittyi keskusteluun',
+              is_system: true,
+            })
+
+            // Update conversation updated_at
+            await supabase
+              .from('conversations')
+              .update({ updated_at: new Date().toISOString() })
+              .eq('id', groupConv.id)
+          }
+        } catch {
+          // Group chat setup failed — not critical
+          console.warn('Group conversation setup failed for event', eventId)
         }
       }
+
+      toast.success(event.is_attending ? 'Osallistuminen peruttu' : 'Osallistuminen vahvistettu!')
     } catch {
       // Rollback to snapshot (not initial prop — preserves other optimistic updates)
       setEvents(prevEvents)
       setSelectedEvent(prevSelected)
-      toast.error('Osallistuminen epäonnistui')
+      toast.error('Tapahtumaan osallistuminen epäonnistui')
     }
   }
 

@@ -80,7 +80,7 @@
   },
   "tutorial": {
     "welcomeTitle": "Welcome to TackBird!",
-    "welcomeSubtitle": "Your neighborhood bulletin board",
+    "welcomeSubtitle": "Neighborhood sharing platform",
     "shareTitle": "Share, lend and help",
     "shareSubtitle": "Offer items, services and help to your neighbors",
     "eventsTitle": "Events",
@@ -235,7 +235,7 @@
   },
   "onboarding": {
     "welcome": "Welcome to TackBird!",
-    "subtitle": "Neighborhood help nearby",
+    "subtitle": "Neighborhood sharing platform",
     "letsStart": "Let's get started",
     "skip": "Skip",
     "whereDoYouLive": "Where do you live?",

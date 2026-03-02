@@ -107,7 +107,13 @@ export default function OnboardingPage() {
         className="text-sm text-muted-foreground text-center mb-1"
         style={{ animation: 'fadeIn 0.5s ease-out 0.15s both' }}
       >
-        Naapurustosi ilmoitustaulu — pyydä apua, tarjoa palveluksia ja lainaa tavaroita.
+        Naapuruston jakamisalusta — jaa, auta ja lainaa naapurien kesken.
+      </p>
+      <p
+        className="text-[11px] text-muted-foreground/70 text-center italic mb-1"
+        style={{ animation: 'fadeIn 0.5s ease-out 0.17s both' }}
+      >
+        Naapurin apu ei ole koskaan ollut lähempänä
       </p>
       <p
         className="text-xs text-muted-foreground text-center mb-8"
@@ -243,7 +249,7 @@ export default function OnboardingPage() {
         className="text-sm text-muted-foreground text-center mb-6"
         style={{ animation: 'fadeIn 0.4s ease-out 0.2s both' }}
       >
-        Profiilisi on luotu. Voit nyt selata ilmoituksia.
+        Profiilisi on luotu. Voit nyt tutustua naapurustoosi.
       </p>
 
       <div
