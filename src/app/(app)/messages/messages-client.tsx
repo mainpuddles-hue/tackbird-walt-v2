@@ -17,6 +17,9 @@ interface EnrichedConversation {
   user1_id: string
   user2_id: string
   is_archived?: boolean
+  is_group?: boolean
+  group_name?: string | null
+  group_emoji?: string | null
   updated_at: string
   user1: Pick<Profile, 'id' | 'name' | 'avatar_url'> | null
   user2: Pick<Profile, 'id' | 'name' | 'avatar_url'> | null
@@ -25,6 +28,7 @@ interface EnrichedConversation {
     image_url: string | null
     sender_id: string
     created_at: string
+    is_system?: boolean
   } | null
   unread_count: number
 }
@@ -102,19 +106,31 @@ export function MessagesClient({ conversations, currentUserId }: MessagesClientP
       ) : (
         <div className="space-y-1">
           {visibleConversations.map((conv) => {
+            const isGroup = conv.is_group === true
             const otherUser =
               conv.user1_id === currentUserId ? conv.user2 : conv.user1
             const hasUnread = conv.unread_count > 0
             const lastMsg = conv.last_message
             const isArchived = conv.is_archived === true
 
+            // Display name and avatar
+            const displayName = isGroup
+              ? (conv.group_name || 'Ryhmäkeskustelu')
+              : (otherUser?.name ?? 'Käyttäjä')
+            const displayEmoji = isGroup ? (conv.group_emoji || '📅') : null
+
+            // Preview message
             let preview = ''
             if (lastMsg) {
-              if (lastMsg.image_url && (!lastMsg.content || lastMsg.content === '\ud83d\udcf7 Kuva')) {
-                preview = '\ud83d\udcf7 Kuva'
+              if (lastMsg.image_url && (!lastMsg.content || lastMsg.content === '📷 Kuva')) {
+                preview = '📷 Kuva'
+              } else if (lastMsg.is_system) {
+                preview = lastMsg.content
+              } else if (isGroup) {
+                preview = lastMsg.content
               } else {
                 const isMine = lastMsg.sender_id === currentUserId
-                preview = isMine ? `Sin\u00e4: ${lastMsg.content}` : lastMsg.content
+                preview = isMine ? `Sinä: ${lastMsg.content}` : lastMsg.content
               }
             }
 
@@ -128,17 +144,23 @@ export function MessagesClient({ conversations, currentUserId }: MessagesClientP
                   )}
                 >
                   <div className="relative">
-                    <Avatar className="h-10 w-10">
-                      {otherUser?.avatar_url && (
-                        <AvatarImage
-                          src={otherUser.avatar_url}
-                          alt={otherUser.name}
-                        />
-                      )}
-                      <AvatarFallback>
-                        {otherUser?.name?.charAt(0)?.toUpperCase() ?? '?'}
-                      </AvatarFallback>
-                    </Avatar>
+                    {isGroup ? (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-xl">
+                        {displayEmoji}
+                      </div>
+                    ) : (
+                      <Avatar className="h-10 w-10">
+                        {otherUser?.avatar_url && (
+                          <AvatarImage
+                            src={otherUser.avatar_url}
+                            alt={otherUser.name}
+                          />
+                        )}
+                        <AvatarFallback>
+                          {otherUser?.name?.charAt(0)?.toUpperCase() ?? '?'}
+                        </AvatarFallback>
+                      </Avatar>
+                    )}
                     {hasUnread && (
                       <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-medium text-primary-foreground">
                         {conv.unread_count}
@@ -151,7 +173,7 @@ export function MessagesClient({ conversations, currentUserId }: MessagesClientP
                         'truncate text-sm',
                         hasUnread ? 'font-semibold' : 'font-medium'
                       )}>
-                        {otherUser?.name ?? 'K\u00e4ytt\u00e4j\u00e4'}
+                        {displayName}
                       </p>
                       <span className="shrink-0 text-[10px] text-muted-foreground">
                         {lastMsg ? formatTimeAgo(lastMsg.created_at) : formatTimeAgo(conv.updated_at)}
@@ -161,7 +183,7 @@ export function MessagesClient({ conversations, currentUserId }: MessagesClientP
                       'truncate text-xs',
                       hasUnread ? 'text-foreground font-medium' : 'text-muted-foreground'
                     )}>
-                      {preview || 'Ei viestej\u00e4 viel\u00e4'}
+                      {preview || 'Ei viestejä vielä'}
                     </p>
                   </div>
                 </Link>

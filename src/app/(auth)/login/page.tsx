@@ -176,7 +176,7 @@ export default function LoginPage() {
         >
           <TackBirdLogo size={56} className="text-primary" />
           <div className="text-center">
-            <h1 className="font-[family-name:var(--font-bricolage)] text-xl font-medium tracking-[0.06em] uppercase">TackBird</h1>
+            <h1 className="text-xl font-semibold tracking-wide">TackBird</h1>
             <p className="text-sm text-muted-foreground mt-1">Naapurustosi ilmoitustaulu</p>
           </div>
         </div>

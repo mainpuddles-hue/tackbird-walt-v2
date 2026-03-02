@@ -40,8 +40,8 @@ export function PostCard({ post }: PostCardProps) {
     <Link href={`/post/${post.id}`}>
       <Card
         className={cn(
-          'relative overflow-hidden border border-[var(--color-border)] rounded-2xl transition-all duration-150 ease-in-out',
-          'hover:border-[var(--color-muted-foreground)] hover:shadow-[0_1px_3px_rgba(26,26,46,0.04)]',
+          'relative overflow-hidden border-0 rounded-2xl shadow-[0_1px_3px_rgba(45,80,67,0.06),0_1px_2px_rgba(0,0,0,0.03)] transition-all duration-150 ease-in-out',
+          'hover:shadow-[0_2px_8px_rgba(45,80,67,0.10)]',
           isPro && 'ring-1 ring-amber-400/40'
         )}
         style={isPro ? {

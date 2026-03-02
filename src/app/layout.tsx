@@ -1,16 +1,10 @@
 import type { Metadata, Viewport } from 'next'
-import { Bricolage_Grotesque, Instrument_Sans } from 'next/font/google'
+import { Inter } from 'next/font/google'
 import { Providers } from '@/components/providers'
 import './globals.css'
 
-const bricolage = Bricolage_Grotesque({
-  variable: '--font-bricolage',
-  subsets: ['latin'],
-  display: 'swap',
-})
-
-const instrument = Instrument_Sans({
-  variable: '--font-instrument',
+const inter = Inter({
+  variable: '--font-inter',
   subsets: ['latin'],
   display: 'swap',
 })
@@ -30,8 +24,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#F5F4F0' },
-    { media: '(prefers-color-scheme: dark)', color: '#0D0D15' },
+    { media: '(prefers-color-scheme: light)', color: '#F5F0E8' },
+    { media: '(prefers-color-scheme: dark)', color: '#1A2E28' },
   ],
 }
 
@@ -43,7 +37,7 @@ export default function RootLayout({
   return (
     <html lang="fi" suppressHydrationWarning>
       <body
-        className={`${bricolage.variable} ${instrument.variable} font-sans antialiased`}
+        className={`${inter.variable} font-sans antialiased`}
       >
         <Providers>{children}</Providers>
       </body>

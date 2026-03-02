@@ -33,9 +33,39 @@ export default async function ConversationPage({ params }: ConversationPageProps
 
   if (!conversation) notFound()
 
+  const isGroup = conversation.is_group === true
+
   // Verify user belongs to this conversation
-  if (conversation.user1_id !== user.id && conversation.user2_id !== user.id) {
-    notFound()
+  if (isGroup) {
+    // For group chats: check conversation_members
+    const { data: membership } = await supabase
+      .from('conversation_members')
+      .select('user_id')
+      .eq('conversation_id', id)
+      .eq('user_id', user.id)
+      .maybeSingle()
+    if (!membership) notFound()
+  } else {
+    // For DMs: check user1_id or user2_id
+    if (conversation.user1_id !== user.id && conversation.user2_id !== user.id) {
+      notFound()
+    }
+  }
+
+  // For group chats: fetch all members with profiles
+  let members: Array<{ id: string; name: string; avatar_url: string | null }> = []
+  if (isGroup) {
+    const { data: memberRows } = await supabase
+      .from('conversation_members')
+      .select('user_id, profiles:profiles!conversation_members_user_id_fkey(id, name, avatar_url)')
+      .eq('conversation_id', id)
+
+    members = (memberRows ?? [])
+      .map((row) => {
+        const profile = row.profiles as unknown as { id: string; name: string; avatar_url: string | null } | null
+        return profile ? { id: profile.id, name: profile.name, avatar_url: profile.avatar_url } : null
+      })
+      .filter((p): p is NonNullable<typeof p> => p !== null)
   }
 
   const otherUser =
@@ -64,6 +94,10 @@ export default async function ConversationPage({ params }: ConversationPageProps
       otherUser={otherUser}
       currentUserId={user.id}
       currentUserName={currentProfile?.name ?? 'Käyttäjä'}
+      isGroup={isGroup}
+      groupName={conversation.group_name ?? undefined}
+      groupEmoji={conversation.group_emoji ?? undefined}
+      members={isGroup ? members : undefined}
     />
   )
 }

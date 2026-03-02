@@ -4,56 +4,52 @@ interface TackBirdLogoProps {
   size?: number
   color?: string
   className?: string
+  withText?: boolean
 }
 
 export function TackBirdLogo({
   size = 32,
   color = 'currentColor',
   className,
+  withText = false,
 }: TackBirdLogoProps) {
   return (
-    <svg
-      width={size}
-      height={size}
-      viewBox="0 0 64 64"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={cn('shrink-0', className)}
-      aria-hidden="true"
-    >
-      {/* Body — sleek swallow shape */}
-      <path
-        d="M10 38 C10 38 18 28 34 26 C48 24 54 28 56 30 L52 34 C52 34 44 28 34 30 C24 32 16 38 16 38 Z"
-        fill={color}
-      />
-      {/* Wing — swept back */}
-      <path
-        d="M26 32 C26 32 20 20 6 14 C14 20 22 30 22 30 Z"
-        fill={color}
-        opacity="0.65"
-      />
-      {/* Tail feathers — forked */}
-      <path
-        d="M10 38 C10 38 2 36 0 28 C4 33 8 35 8 35 Z"
-        fill={color}
-        opacity="0.5"
-      />
-      <path
-        d="M12 40 C12 40 4 42 0 48 C6 44 10 40 10 40 Z"
-        fill={color}
-        opacity="0.4"
-      />
-      {/* Head */}
-      <circle cx="52" cy="28" r="6.5" fill={color} />
-      {/* Eye */}
-      <circle cx="54" cy="27" r="1.8" fill="white" />
-      <circle cx="54.3" cy="26.8" r="0.7" fill={color} />
-      {/* Beak */}
-      <path
-        d="M57 28 L64 25.5 L58 31 Z"
-        fill={color}
-        opacity="0.85"
-      />
-    </svg>
+    <span className={cn('inline-flex items-center gap-2 shrink-0', className)}>
+      <svg
+        width={size}
+        height={size}
+        viewBox="0 0 40 40"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        {/* Minimal bird in flight — two clean arcs */}
+        <path
+          d="M4 28C4 28 10 16 20 14C30 12 36 18 36 18"
+          stroke={color}
+          strokeWidth="3"
+          strokeLinecap="round"
+          fill="none"
+        />
+        <path
+          d="M8 22C8 22 14 12 22 12C30 12 34 16 34 16"
+          stroke={color}
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          fill="none"
+          opacity="0.5"
+        />
+        {/* Pin dot — the "Tack" */}
+        <circle cx="20" cy="14" r="2.5" fill={color} />
+      </svg>
+      {withText && (
+        <span
+          className="font-normal tracking-wide"
+          style={{ fontSize: size * 0.75, color }}
+        >
+          TackBird
+        </span>
+      )}
+    </span>
   )
 }

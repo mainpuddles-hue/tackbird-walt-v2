@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -14,11 +15,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { CalendarDays, MapPin, Users, Plus, Check, List, Pencil, Trash2 } from 'lucide-react'
+import { CalendarDays, MapPin, Users, Plus, Check, List, Pencil, Trash2, Dice5, MessageCircle } from 'lucide-react'
 import { formatEventDateShort, formatEventDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import { CalendarView } from '@/components/calendar-view'
+import { SurpriseDayModal } from '@/components/surprise-day-modal'
+import { useI18n } from '@/lib/i18n'
 import type { Event } from '@/lib/types'
 
 type EventWithMeta = Event & { attendee_count: number; is_attending: boolean }
@@ -40,6 +43,11 @@ export function EventsClient({ events: initialEvents, currentUserId }: EventsCli
   const [newLocation, setNewLocation] = useState('')
   const [newMaxAttendees, setNewMaxAttendees] = useState('')
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list')
+  const [showSurpriseDay, setShowSurpriseDay] = useState(false)
+  const { t } = useI18n()
+
+  // Group chat conversation id for selected event
+  const [groupConvId, setGroupConvId] = useState<string | null>(null)
 
   // Edit state
   const [editing, setEditing] = useState(false)
@@ -52,6 +60,25 @@ export function EventsClient({ events: initialEvents, currentUserId }: EventsCli
 
   const router = useRouter()
   const supabase = createClient()
+
+  // Look up group conversation for selected event
+  const lookupGroupConv = useCallback(async (eventId: string) => {
+    const { data } = await supabase
+      .from('conversations')
+      .select('id')
+      .eq('event_id', eventId)
+      .eq('is_group', true)
+      .maybeSingle()
+    setGroupConvId(data?.id ?? null)
+  }, [supabase])
+
+  useEffect(() => {
+    if (selectedEvent?.is_attending && selectedEvent?.id) {
+      lookupGroupConv(selectedEvent.id)
+    } else {
+      setGroupConvId(null)
+    }
+  }, [selectedEvent?.id, selectedEvent?.is_attending, lookupGroupConv])
 
   const filteredEvents = events.filter((e) => {
     if (filter === 'all') return true
@@ -177,17 +204,82 @@ export function EventsClient({ events: initialEvents, currentUserId }: EventsCli
 
     try {
       if (event.is_attending) {
+        // Un-attend: remove from event
         const { error } = await supabase
           .from('event_attendees')
           .delete()
           .eq('event_id', eventId)
           .eq('user_id', currentUserId)
         if (error) throw error
+
+        // Remove from group conversation
+        const { data: groupConv } = await supabase
+          .from('conversations')
+          .select('id')
+          .eq('event_id', eventId)
+          .eq('is_group', true)
+          .maybeSingle()
+
+        if (groupConv) {
+          await supabase
+            .from('conversation_members')
+            .delete()
+            .eq('conversation_id', groupConv.id)
+            .eq('user_id', currentUserId)
+        }
       } else {
+        // Attend: join event
         const { error } = await supabase
           .from('event_attendees')
           .insert({ event_id: eventId, user_id: currentUserId })
         if (error) throw error
+
+        // Create or join group conversation
+        let { data: groupConv } = await supabase
+          .from('conversations')
+          .select('id')
+          .eq('event_id', eventId)
+          .eq('is_group', true)
+          .maybeSingle()
+
+        if (!groupConv) {
+          const { data: newConv, error: convError } = await supabase
+            .from('conversations')
+            .insert({
+              is_group: true,
+              event_id: eventId,
+              group_name: event.title,
+              group_emoji: event.icon || '📅',
+            })
+            .select('id')
+            .single()
+          if (convError) throw convError
+          groupConv = newConv
+        }
+
+        if (groupConv) {
+          // Add as member (upsert to avoid duplicates)
+          await supabase
+            .from('conversation_members')
+            .upsert(
+              { conversation_id: groupConv.id, user_id: currentUserId },
+              { onConflict: 'conversation_id,user_id' }
+            )
+
+          // Send system message
+          await supabase.from('messages').insert({
+            conversation_id: groupConv.id,
+            sender_id: currentUserId,
+            content: 'liittyi keskusteluun',
+            is_system: true,
+          })
+
+          // Update conversation updated_at
+          await supabase
+            .from('conversations')
+            .update({ updated_at: new Date().toISOString() })
+            .eq('id', groupConv.id)
+        }
       }
     } catch {
       // Rollback to snapshot (not initial prop — preserves other optimistic updates)
@@ -275,6 +367,23 @@ export function EventsClient({ events: initialEvents, currentUserId }: EventsCli
           )}
         </div>
       </div>
+
+      {/* Surprise Day CTA */}
+      {currentUserId && (
+        <button
+          onClick={() => setShowSurpriseDay(true)}
+          className="w-full rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 p-3 flex items-center gap-3 transition-all hover:shadow-md active:scale-[0.98]"
+        >
+          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/15 text-xl">
+            🎲
+          </span>
+          <div className="text-left flex-1">
+            <p className="font-semibold text-sm">{t('events.surpriseDay')}</p>
+            <p className="text-xs text-muted-foreground">{t('surpriseDay.subtitle')}</p>
+          </div>
+          <Dice5 className="h-5 w-5 text-primary" />
+        </button>
+      )}
 
       {/* Filters */}
       <div className="flex gap-2 overflow-x-auto">
@@ -416,6 +525,15 @@ export function EventsClient({ events: initialEvents, currentUserId }: EventsCli
                 {selectedEvent.is_attending ? 'Peru osallistuminen' : 'Osallistu tapahtumaan'}
               </Button>
 
+              {selectedEvent.is_attending && groupConvId && (
+                <Link href={`/messages/${groupConvId}`} className="w-full">
+                  <Button variant="outline" className="w-full">
+                    <MessageCircle className="mr-1.5 h-4 w-4" />
+                    {t('events.openChat')}
+                  </Button>
+                </Link>
+              )}
+
               {isOwner && (
                 <div className="flex gap-2">
                   <Button
@@ -511,6 +629,12 @@ export function EventsClient({ events: initialEvents, currentUserId }: EventsCli
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Surprise Day modal */}
+      <SurpriseDayModal
+        open={showSurpriseDay}
+        onOpenChange={setShowSurpriseDay}
+      />
 
       {/* Create event dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>

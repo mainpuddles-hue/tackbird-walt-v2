@@ -15,7 +15,7 @@ import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
 import {
   X, MapPin, Loader2, Plus, Camera, ArrowLeft, ChevronRight,
-  HandHelping, Gift, Heart, Zap, BookOpen, CalendarDays, AlertTriangle,
+  HandHelping, Gift, Heart, BookOpen, CalendarDays,
 } from 'lucide-react'
 import { optimizePostImage } from '@/lib/image-optimize'
 import { useTheme } from 'next-themes'
@@ -28,20 +28,16 @@ const ICON_MAP: Record<string, LucideIcon> = {
   HandHelping,
   Gift,
   Heart,
-  Zap,
   BookOpen,
   CalendarDays,
-  AlertTriangle,
 }
 
 const CATEGORY_DESCRIPTIONS: Record<PostType, string> = {
   tarvitsen: 'Tarvitsetko apua tai tavaraa?',
   tarjoan: 'Tarjoa palvelusta tai tavaraa',
   ilmaista: 'Anna pois ilmaiseksi',
-  nappaa: 'Nopea tarjous — 24h voimassa',
   lainaa: 'Lainaa tai vuokraa tavaroita',
   tapahtuma: 'Luo naapuruston tapahtuma',
-  tilannehuone: 'Tiedota kiireellisestä asiasta',
 }
 
 export default function CreatePage() {

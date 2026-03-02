@@ -4,10 +4,8 @@ export type PostType =
   | 'tarvitsen'
   | 'tarjoan'
   | 'ilmaista'
-  | 'nappaa'
   | 'lainaa'
   | 'tapahtuma'
-  | 'tilannehuone'
 
 export type ProfileVisibility = 'everyone' | 'neighbors' | 'hidden'
 export type LocationAccuracy = 'exact' | 'area' | 'city'
@@ -98,6 +96,10 @@ export interface Conversation {
   user2_id: string
   post_id: string | null
   is_archived: boolean
+  is_group: boolean
+  event_id: string | null
+  group_name: string | null
+  group_emoji: string | null
   created_at: string
   updated_at: string
   // Joined fields
@@ -113,6 +115,7 @@ export interface Message {
   content: string
   image_url: string | null
   is_read: boolean
+  is_system: boolean
   created_at: string
 }
 

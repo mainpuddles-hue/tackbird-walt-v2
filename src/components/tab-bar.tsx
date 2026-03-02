@@ -74,10 +74,10 @@ export function TabBar() {
               <Link
                 key={href}
                 href={href}
-                className="relative flex min-w-[44px] min-h-[44px] flex-col items-center justify-center gap-0.5 px-3 py-1"
+                className="relative flex min-w-[44px] min-h-[44px] flex-col items-center justify-center gap-0.5 px-3 py-1 animate-glow-pulse"
               >
                 <Icon className="h-5 w-5 text-[var(--color-accent)]" strokeWidth={1.75} />
-                <span className="font-[family-name:var(--font-bricolage)] text-[10px] text-[var(--color-accent)]">{label}</span>
+                <span className="text-[10px] font-medium text-[var(--color-accent)]">{label}</span>
               </Link>
             )
           }
@@ -99,12 +99,12 @@ export function TabBar() {
                   strokeWidth={isActive ? 1.75 : 1.25}
                 />
                 {showBadge && (
-                  <span className="absolute -top-1.5 -right-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-[#D4654A] px-0.5 text-[9px] font-bold text-white">
+                  <span className="absolute -top-1.5 -right-2 flex h-3.5 min-w-3.5 items-center justify-center rounded-full bg-[#D4956B] px-0.5 text-[9px] font-bold text-white">
                     {unreadMessages > 9 ? '9+' : unreadMessages}
                   </span>
                 )}
               </div>
-              <span className="font-[family-name:var(--font-bricolage)]">{label}</span>
+              <span className="text-[10px] font-medium">{label}</span>
               {/* Active indicator dot */}
               {isActive && (
                 <span

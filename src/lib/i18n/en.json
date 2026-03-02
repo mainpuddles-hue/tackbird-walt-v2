@@ -60,6 +60,39 @@
     "booking": "Booking",
     "sendBooking": "Send booking"
   },
+  "surpriseDay": {
+    "title": "Surprise Day",
+    "subtitle": "Let us plan the perfect weekend for you in Helsinki!",
+    "generate": "Generate surprise day!",
+    "regenerate": "Regenerate",
+    "accept": "Accept plan",
+    "accepted": "Plan saved!",
+    "selectDate": "Select date",
+    "onlyWeekend": "Saturdays and Sundays only",
+    "yourPlan": "Your day",
+    "yourPlans": "Previous plans",
+    "activity": "activities",
+    "completed": "Completed",
+    "deleted": "Plan deleted",
+    "showMap": "Show map",
+    "hideMap": "Hide map",
+    "goNext": "Next stop"
+  },
+  "tutorial": {
+    "welcomeTitle": "Welcome to TackBird!",
+    "welcomeSubtitle": "Your neighborhood bulletin board",
+    "shareTitle": "Share, lend and help",
+    "shareSubtitle": "Offer items, services and help to your neighbors",
+    "eventsTitle": "Events",
+    "eventsSubtitle": "Find and create neighborhood events",
+    "chatTitle": "Messages",
+    "chatSubtitle": "Chat safely with other users",
+    "surpriseTitle": "Surprise Day",
+    "surpriseSubtitle": "Let us plan the perfect weekend for you in Helsinki",
+    "readyTitle": "You're ready!",
+    "readySubtitle": "Start by exploring your neighborhood",
+    "getStarted": "Get started"
+  },
   "events": {
     "title": "Events",
     "create": "Create event",
@@ -75,7 +108,9 @@
     "filterWeek": "This week",
     "calendar": "Calendar",
     "list": "List",
-    "attendees": "Attendees"
+    "attendees": "Attendees",
+    "openChat": "Open chat",
+    "surpriseDay": "Surprise Day"
   },
   "messages": {
     "title": "Messages",

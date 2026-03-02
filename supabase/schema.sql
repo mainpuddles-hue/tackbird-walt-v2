@@ -132,9 +132,13 @@ CREATE INDEX IF NOT EXISTS idx_event_attendees_event ON public.event_attendees(e
 -- ============================================================
 CREATE TABLE IF NOT EXISTS public.conversations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user1_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-    user2_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    user1_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
+    user2_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
     post_id UUID REFERENCES public.posts(id) ON DELETE SET NULL,
+    is_group BOOLEAN DEFAULT FALSE,
+    event_id UUID REFERENCES public.events(id) ON DELETE SET NULL,
+    group_name TEXT,
+    group_emoji TEXT,
     is_archived BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
@@ -154,6 +158,7 @@ CREATE TABLE IF NOT EXISTS public.messages (
     content TEXT NOT NULL,
     image_url TEXT,
     is_read BOOLEAN DEFAULT FALSE,
+    is_system BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -351,6 +356,52 @@ CREATE TABLE IF NOT EXISTS public.ad_impressions (
 );
 
 CREATE INDEX IF NOT EXISTS idx_ad_impressions_ad ON public.ad_impressions(ad_id);
+
+-- ============================================================
+-- SURPRISE DAY PLANS
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.surprise_plans (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    plan_date DATE NOT NULL,
+    status TEXT DEFAULT 'active' CHECK (status IN ('active', 'completed', 'cancelled')),
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_surprise_plans_user ON public.surprise_plans(user_id, plan_date);
+
+-- ============================================================
+-- SURPRISE DAY ACTIVITIES
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.surprise_plan_activities (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    plan_id UUID NOT NULL REFERENCES public.surprise_plans(id) ON DELETE CASCADE,
+    title TEXT NOT NULL,
+    description TEXT,
+    location_name TEXT,
+    time_slot TEXT NOT NULL,
+    emoji TEXT DEFAULT '📍',
+    category TEXT CHECK (category IN ('breakfast', 'activity', 'lunch', 'culture', 'evening')),
+    order_index INTEGER DEFAULT 0,
+    lat DOUBLE PRECISION,
+    lng DOUBLE PRECISION
+);
+
+CREATE INDEX IF NOT EXISTS idx_surprise_activities_plan ON public.surprise_plan_activities(plan_id);
+
+-- ============================================================
+-- CONVERSATION MEMBERS (group chats)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS public.conversation_members (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    conversation_id UUID NOT NULL REFERENCES public.conversations(id) ON DELETE CASCADE,
+    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    joined_at TIMESTAMPTZ DEFAULT NOW(),
+    UNIQUE(conversation_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_conversation_members_conv ON public.conversation_members(conversation_id);
+CREATE INDEX IF NOT EXISTS idx_conversation_members_user ON public.conversation_members(user_id);
 
 -- ============================================================
 -- TRIGGER: Auto-create profile on user signup

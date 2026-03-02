@@ -1,22 +1,46 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { TackBirdLogo } from '@/components/tackbird-logo'
+import { AppTutorial } from '@/components/app-tutorial'
 import { cn } from '@/lib/utils'
 import { NEIGHBORHOODS } from '@/lib/constants'
 import { toast } from 'sonner'
 
+const TUTORIAL_KEY = 'tackbird_tutorial_done'
+
 export default function OnboardingPage() {
+  const [showTutorial, setShowTutorial] = useState(false)
+  const [tutorialChecked, setTutorialChecked] = useState(false)
   const [step, setStep] = useState(0)
   const [name, setName] = useState('')
   const [naapurusto, setNaapurusto] = useState('')
   const [bio, setBio] = useState('')
   const [saving, setSaving] = useState(false)
   const router = useRouter()
+
+  // Show tutorial if not completed yet
+  useEffect(() => {
+    try {
+      const done = sessionStorage.getItem(TUTORIAL_KEY)
+      if (!done) {
+        setShowTutorial(true)
+      }
+    } catch {
+      // sessionStorage not available
+    }
+    setTutorialChecked(true)
+  }, [])
+
+  // Show tutorial overlay first
+  if (!tutorialChecked) return null
+  if (showTutorial) {
+    return <AppTutorial onComplete={() => setShowTutorial(false)} />
+  }
 
   async function handleFinish() {
     setSaving(true)

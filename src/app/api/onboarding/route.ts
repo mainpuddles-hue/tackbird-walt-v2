@@ -51,27 +51,32 @@ export async function POST(request: NextRequest) {
     }
 
     if (skip) {
-      // Skip onboarding — just mark as completed
+      // Skip onboarding — just mark as completed (upsert in case trigger didn't fire)
       const { error } = await supabaseAdmin
         .from('profiles')
-        .update({ onboarding_completed: true })
-        .eq('id', user.id)
+        .upsert({
+          id: user.id,
+          email: user.email,
+          name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'Käyttäjä',
+          onboarding_completed: true,
+        }, { onConflict: 'id' })
 
       if (error) {
         console.error('Onboarding skip error:', error)
         return NextResponse.json({ error: 'Failed to skip onboarding' }, { status: 500 })
       }
     } else {
-      // Full onboarding — update profile with user data
+      // Full onboarding — upsert profile (handles case where trigger didn't fire)
       const { error } = await supabaseAdmin
         .from('profiles')
-        .update({
+        .upsert({
+          id: user.id,
+          email: user.email,
           name: name || 'Käyttäjä',
           naapurusto: naapurusto || 'Kallio',
           bio: bio || '',
           onboarding_completed: true,
-        })
-        .eq('id', user.id)
+        }, { onConflict: 'id' })
 
       if (error) {
         console.error('Onboarding save error:', error)

@@ -60,6 +60,39 @@
     "booking": "Bokning",
     "sendBooking": "Skicka bokning"
   },
+  "surpriseDay": {
+    "title": "Överraskningsdag",
+    "subtitle": "Låt oss planera den perfekta helgen för dig i Helsingfors!",
+    "generate": "Generera överraskningsdag!",
+    "regenerate": "Generera igen",
+    "accept": "Acceptera plan",
+    "accepted": "Plan sparad!",
+    "selectDate": "Välj datum",
+    "onlyWeekend": "Endast lördag och söndag",
+    "yourPlan": "Din dag",
+    "yourPlans": "Tidigare planer",
+    "activity": "aktiviteter",
+    "completed": "Genomförd",
+    "deleted": "Plan raderad",
+    "showMap": "Visa karta",
+    "hideMap": "Dölj karta",
+    "goNext": "Nästa stopp"
+  },
+  "tutorial": {
+    "welcomeTitle": "Välkommen till TackBird!",
+    "welcomeSubtitle": "Ditt grannskap anslagstavla",
+    "shareTitle": "Dela, låna och hjälp",
+    "shareSubtitle": "Erbjud saker, tjänster och hjälp till dina grannar",
+    "eventsTitle": "Evenemang",
+    "eventsSubtitle": "Hitta och skapa grannskapsevenemang",
+    "chatTitle": "Meddelanden",
+    "chatSubtitle": "Chatta säkert med andra användare",
+    "surpriseTitle": "Överraskningsdag",
+    "surpriseSubtitle": "Låt oss planera den perfekta helgen för dig i Helsingfors",
+    "readyTitle": "Du är redo!",
+    "readySubtitle": "Börja med att utforska ditt grannskap",
+    "getStarted": "Kom igång"
+  },
   "events": {
     "title": "Evenemang",
     "create": "Skapa evenemang",
@@ -68,14 +101,16 @@
     "cancelAttendance": "Avboka deltagande",
     "edit": "Redigera",
     "delete": "Ta bort",
-    "deleteConfirm": "\u00c4r du s\u00e4ker p\u00e5 att du vill ta bort det h\u00e4r evenemanget?",
+    "deleteConfirm": "Är du säker på att du vill ta bort det här evenemanget?",
     "noEvents": "Inga evenemang",
     "filterAll": "Alla",
     "filterToday": "Idag",
     "filterWeek": "Denna vecka",
     "calendar": "Kalender",
     "list": "Lista",
-    "attendees": "Deltagare"
+    "attendees": "Deltagare",
+    "openChat": "Öppna chatt",
+    "surpriseDay": "Överraskningsdag"
   },
   "messages": {
     "title": "Meddelanden",

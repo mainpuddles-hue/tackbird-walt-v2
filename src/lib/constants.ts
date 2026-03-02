@@ -1,6 +1,6 @@
 import type { PostType } from './types'
 
-// Post categories with Finnish labels, icons (Lucide names), and colors
+// Post categories with Finnish labels, icons (Lucide names), and Forest Teal colors
 export const CATEGORIES: Record<PostType, {
   label: string
   icon: string
@@ -11,35 +11,28 @@ export const CATEGORIES: Record<PostType, {
   tarvitsen: {
     label: 'Tarvitsen',
     icon: 'HandHelping',
-    color: '#C75B3A',
-    bgLight: '#FDF0EB',
-    bgDark: '#2A1A15',
+    color: '#3D6B5E',
+    bgLight: '#E8F0ED',
+    bgDark: '#1A2E28',
   },
   tarjoan: {
     label: 'Tarjoan',
     icon: 'Gift',
-    color: '#7C5CBF',
-    bgLight: '#F4EFFF',
-    bgDark: '#1A1525',
+    color: '#4CAF6A',
+    bgLight: '#E8F5EC',
+    bgDark: '#1A2E1F',
   },
   ilmaista: {
     label: 'Ilmaista',
     icon: 'Heart',
-    color: '#3B7DD8',
-    bgLight: '#EBF2FE',
-    bgDark: '#101A2D',
-  },
-  nappaa: {
-    label: 'Nappaa!',
-    icon: 'Zap',
-    color: '#C43C3C',
-    bgLight: '#FDECEC',
-    bgDark: '#2D1010',
+    color: '#D4956B',
+    bgLight: '#FDF3EB',
+    bgDark: '#2D2015',
   },
   lainaa: {
     label: 'Lainaa',
     icon: 'BookOpen',
-    color: '#C98B2E',
+    color: '#C4943A',
     bgLight: '#FDF6E8',
     bgDark: '#2D2010',
   },
@@ -50,21 +43,14 @@ export const CATEGORIES: Record<PostType, {
     bgLight: '#E8F7EF',
     bgDark: '#102D1A',
   },
-  tilannehuone: {
-    label: 'Tilannehuone',
-    icon: 'AlertTriangle',
-    color: '#1E8CA0',
-    bgLight: '#E6F6FA',
-    bgDark: '#102D2B',
-  },
 }
 
 // Badge configuration
 export const BADGES = {
-  verified: { label: 'Vahvistettu', icon: 'BadgeCheck', color: '#3B82F6' },
-  pro: { label: 'Pro', icon: 'Crown', color: '#F59E0B' },
-  trusted: { label: 'Luotettu', icon: 'Shield', color: '#10B981' },
-  active: { label: 'Aktiivinen', icon: 'Flame', color: '#EF4444' },
+  verified: { label: 'Vahvistettu', icon: 'BadgeCheck', color: '#3D6B5E' },
+  pro: { label: 'Pro', icon: 'Crown', color: '#C4943A' },
+  trusted: { label: 'Luotettu', icon: 'Shield', color: '#4CAF6A' },
+  active: { label: 'Aktiivinen', icon: 'Flame', color: '#D4956B' },
 } as const
 
 // Helsinki neighborhoods

@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/utils'
 import { CATEGORIES } from '@/lib/constants'
-import { HandHelping, Gift, Heart, Zap, BookOpen, CalendarDays, AlertTriangle, LayoutGrid } from 'lucide-react'
+import { HandHelping, Gift, Heart, BookOpen, CalendarDays, LayoutGrid } from 'lucide-react'
 import type { PostType } from '@/lib/types'
 import type { LucideIcon } from 'lucide-react'
 
@@ -10,10 +10,8 @@ const ICON_MAP: Record<string, LucideIcon> = {
   HandHelping,
   Gift,
   Heart,
-  Zap,
   BookOpen,
   CalendarDays,
-  AlertTriangle,
 }
 
 interface FilterBarProps {
@@ -23,17 +21,17 @@ interface FilterBarProps {
 
 export function FilterBar({ activeFilter, onFilterChange }: FilterBarProps) {
   return (
-    <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+    <div className="flex gap-2.5 overflow-x-auto pb-3 scrollbar-hide">
       <button
         onClick={() => onFilterChange(null)}
         className={cn(
-          'shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors inline-flex items-center',
+          'shrink-0 rounded-full px-4 py-2.5 text-sm font-semibold transition-all inline-flex items-center gap-1.5 shadow-sm',
           !activeFilter
-            ? 'bg-primary text-primary-foreground'
+            ? 'bg-primary text-primary-foreground shadow-md scale-[1.02]'
             : 'bg-muted text-muted-foreground hover:bg-muted/80'
         )}
       >
-        <LayoutGrid className="h-3.5 w-3.5 mr-1" />
+        <LayoutGrid className="h-4 w-4" />
         Kaikki
       </button>
       {(Object.entries(CATEGORIES) as [PostType, (typeof CATEGORIES)[PostType]][]).map(
@@ -46,9 +44,9 @@ export function FilterBar({ activeFilter, onFilterChange }: FilterBarProps) {
                 onFilterChange(activeFilter === type ? null : type)
               }
               className={cn(
-                'shrink-0 rounded-full px-3 py-1.5 text-xs font-medium transition-colors inline-flex items-center',
+                'shrink-0 rounded-full px-4 py-2.5 text-sm font-semibold transition-all inline-flex items-center gap-1.5 shadow-sm',
                 activeFilter === type
-                  ? 'text-white'
+                  ? 'text-white shadow-md scale-[1.02]'
                   : 'bg-muted text-muted-foreground hover:bg-muted/80'
               )}
               style={
@@ -57,7 +55,7 @@ export function FilterBar({ activeFilter, onFilterChange }: FilterBarProps) {
                   : undefined
               }
             >
-              {Icon && <Icon className="h-3.5 w-3.5 mr-1" />}
+              {Icon && <Icon className="h-4 w-4" />}
               {cat.label}
             </button>
           )

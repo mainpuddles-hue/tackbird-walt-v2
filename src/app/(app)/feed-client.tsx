@@ -6,7 +6,8 @@ import { createClient } from '@/lib/supabase/client'
 import { PostCard } from '@/components/post-card'
 import { AdCard } from '@/components/ad-card'
 import { FilterBar } from '@/components/filter-bar'
-import { Loader2, RefreshCw } from 'lucide-react'
+import { SwipeCards } from '@/components/swipe-cards'
+import { Loader2, RefreshCw, Layers, CreditCard } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/lib/i18n'
 import type { Post, PostType } from '@/lib/types'
@@ -33,6 +34,7 @@ export function FeedClient({ initialPosts }: FeedClientProps) {
   const [hasMore, setHasMore] = useState(initialPosts.length >= PAGE_SIZE)
   const [hasNewPosts, setHasNewPosts] = useState(false)
   const [ads, setAds] = useState<AdData[]>([])
+  const [swipeMode, setSwipeMode] = useState(false)
   const observerRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const supabase = createClient()
@@ -170,6 +172,10 @@ export function FeedClient({ initialPosts }: FeedClientProps) {
 
   // Reset when filter changes
   useEffect(() => {
+    // Turn off swipe mode if switching away from ilmaista
+    if (activeFilter !== 'ilmaista') {
+      setSwipeMode(false)
+    }
     if (activeFilter) {
       // Fetch filtered posts from scratch
       setLoading(true)
@@ -229,6 +235,30 @@ export function FeedClient({ initialPosts }: FeedClientProps) {
         onFilterChange={setActiveFilter}
       />
 
+      {/* Swipe mode toggle (shown for ilmaista filter) */}
+      {activeFilter === 'ilmaista' && filteredPosts.length > 0 && (
+        <div className="flex justify-end">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSwipeMode(!swipeMode)}
+            className="gap-1.5"
+          >
+            {swipeMode ? (
+              <>
+                <Layers className="h-3.5 w-3.5" />
+                Lista
+              </>
+            ) : (
+              <>
+                <CreditCard className="h-3.5 w-3.5" />
+                Swipe
+              </>
+            )}
+          </Button>
+        </div>
+      )}
+
       {/* New posts banner */}
       {hasNewPosts && (
         <Button
@@ -242,7 +272,17 @@ export function FeedClient({ initialPosts }: FeedClientProps) {
         </Button>
       )}
 
-      {filteredPosts.length === 0 && !loading ? (
+      {/* SwipeCards mode */}
+      {swipeMode && activeFilter === 'ilmaista' && filteredPosts.length > 0 ? (
+        <div className="pb-20">
+          <SwipeCards
+            posts={filteredPosts}
+            onSwipeRight={(post) => {
+              router.push(`/post/${post.id}`)
+            }}
+          />
+        </div>
+      ) : filteredPosts.length === 0 && !loading ? (
         <div className="py-16 text-center text-muted-foreground">
           <p className="text-lg font-medium">{t('feed.noPosts')}</p>
           <p className="text-sm mt-1">{t('feed.noPostsHint')}</p>

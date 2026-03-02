@@ -7,7 +7,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { ArrowLeft, Send, ImageIcon, X, Trash2 } from 'lucide-react'
+import { ArrowLeft, Send, ImageIcon, X, Trash2, Users } from 'lucide-react'
 import { formatTimeAgo } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { toast } from 'sonner'
@@ -15,12 +15,22 @@ import { optimizeMessageImage } from '@/lib/image-optimize'
 import type { Message, Profile } from '@/lib/types'
 import Link from 'next/link'
 
+interface GroupMember {
+  id: string
+  name: string
+  avatar_url: string | null
+}
+
 interface ConversationClientProps {
   conversationId: string
   messages: Message[]
   otherUser: Pick<Profile, 'id' | 'name' | 'avatar_url'> | null
   currentUserId: string
   currentUserName: string
+  isGroup?: boolean
+  groupName?: string
+  groupEmoji?: string
+  members?: GroupMember[]
 }
 
 export function ConversationClient({
@@ -29,6 +39,10 @@ export function ConversationClient({
   otherUser,
   currentUserId,
   currentUserName,
+  isGroup,
+  groupName,
+  groupEmoji,
+  members,
 }: ConversationClientProps) {
   const [messages, setMessages] = useState(initialMessages)
   const [newMessage, setNewMessage] = useState('')
@@ -45,6 +59,14 @@ export function ConversationClient({
   const typingHideTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const router = useRouter()
   const supabase = createClient()
+
+  // Build a map of member id -> name for group chats
+  const memberMap = new Map<string, string>()
+  if (isGroup && members) {
+    for (const m of members) {
+      memberMap.set(m.id, m.name)
+    }
+  }
 
   // Scroll to bottom on mount and new messages
   useEffect(() => {
@@ -199,6 +221,7 @@ export function ConversationClient({
         content: content || (imageUrl ? '📷 Kuva' : ''),
         image_url: imageUrl,
         is_read: false,
+        is_system: false,
         created_at: new Date().toISOString(),
       }
       setMessages((prev) => [...prev, optimisticMsg])
@@ -258,27 +281,48 @@ export function ConversationClient({
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <Link href={`/profile/${otherUser?.id}`} className="flex items-center gap-3 flex-1 min-w-0">
-          <Avatar className="h-8 w-8">
-            {otherUser?.avatar_url && (
-              <AvatarImage src={otherUser.avatar_url} alt={otherUser.name} />
-            )}
-            <AvatarFallback className="text-xs">
-              {otherUser?.name?.charAt(0)?.toUpperCase() ?? '?'}
-            </AvatarFallback>
-          </Avatar>
-          <span className="font-medium text-sm truncate">
-            {otherUser?.name ?? 'Käyttäjä'}
-          </span>
-        </Link>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 text-muted-foreground hover:text-destructive"
-          onClick={() => setShowDeleteConfirm(true)}
-        >
-          <Trash2 className="h-4 w-4" />
-        </Button>
+
+        {isGroup ? (
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-lg">
+              {groupEmoji || '📅'}
+            </div>
+            <div className="min-w-0 flex-1">
+              <span className="font-medium text-sm truncate block">
+                {groupName || 'Ryhmäkeskustelu'}
+              </span>
+              <span className="text-[10px] text-muted-foreground flex items-center gap-1">
+                <Users className="h-3 w-3" />
+                {members?.length ?? 0} jäsentä
+              </span>
+            </div>
+          </div>
+        ) : (
+          <Link href={`/profile/${otherUser?.id}`} className="flex items-center gap-3 flex-1 min-w-0">
+            <Avatar className="h-8 w-8">
+              {otherUser?.avatar_url && (
+                <AvatarImage src={otherUser.avatar_url} alt={otherUser.name} />
+              )}
+              <AvatarFallback className="text-xs">
+                {otherUser?.name?.charAt(0)?.toUpperCase() ?? '?'}
+              </AvatarFallback>
+            </Avatar>
+            <span className="font-medium text-sm truncate">
+              {otherUser?.name ?? 'Käyttäjä'}
+            </span>
+          </Link>
+        )}
+
+        {!isGroup && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+            onClick={() => setShowDeleteConfirm(true)}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
       {/* Delete confirmation banner */}
@@ -315,41 +359,68 @@ export function ConversationClient({
         )}
         {messages.map((msg) => {
           const isMine = msg.sender_id === currentUserId
+          const isSystemMsg = msg.is_system === true
+
+          // System messages: centered, muted, no bubble
+          if (isSystemMsg) {
+            const senderName = memberMap.get(msg.sender_id) || 'Käyttäjä'
+            return (
+              <div key={msg.id} className="flex justify-center">
+                <p className="text-xs text-muted-foreground italic px-3 py-1">
+                  {senderName} {msg.content}
+                </p>
+              </div>
+            )
+          }
+
+          // Group chat: show sender name above message if not from current user
+          const showSenderName = isGroup && !isMine
+          const senderDisplayName = showSenderName
+            ? (memberMap.get(msg.sender_id) || 'Käyttäjä')
+            : null
+
           return (
             <div
               key={msg.id}
               className={cn('flex', isMine ? 'justify-end' : 'justify-start')}
             >
-              <div
-                className={cn(
-                  'max-w-[80%] rounded-2xl px-4 py-2',
-                  isMine
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted'
+              <div className="max-w-[80%]">
+                {senderDisplayName && (
+                  <p className="text-[11px] font-medium text-muted-foreground mb-0.5 ml-3">
+                    {senderDisplayName}
+                  </p>
                 )}
-              >
-                {msg.image_url && (
-                  <div className="relative mb-2 aspect-video w-48 overflow-hidden rounded-lg">
-                    <Image
-                      src={msg.image_url}
-                      alt=""
-                      fill
-                      className="object-cover"
-                      sizes="192px"
-                    />
-                  </div>
-                )}
-                {msg.content && msg.content !== '📷 Kuva' && (
-                  <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
-                )}
-                <p
+                <div
                   className={cn(
-                    'text-[10px] mt-1',
-                    isMine ? 'text-primary-foreground/60' : 'text-muted-foreground'
+                    'rounded-2xl px-4 py-2',
+                    isMine
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted'
                   )}
                 >
-                  {formatTimeAgo(msg.created_at)}
-                </p>
+                  {msg.image_url && (
+                    <div className="relative mb-2 aspect-video w-48 overflow-hidden rounded-lg">
+                      <Image
+                        src={msg.image_url}
+                        alt=""
+                        fill
+                        className="object-cover"
+                        sizes="192px"
+                      />
+                    </div>
+                  )}
+                  {msg.content && msg.content !== '📷 Kuva' && (
+                    <p className="text-sm whitespace-pre-wrap break-words">{msg.content}</p>
+                  )}
+                  <p
+                    className={cn(
+                      'text-[10px] mt-1',
+                      isMine ? 'text-primary-foreground/60' : 'text-muted-foreground'
+                    )}
+                  >
+                    {formatTimeAgo(msg.created_at)}
+                  </p>
+                </div>
               </div>
             </div>
           )
