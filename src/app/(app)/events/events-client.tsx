@@ -412,10 +412,10 @@ export function EventsClient({ events: initialEvents, currentUserId }: EventsCli
       {viewMode === 'list' && (
         <>
           {filteredEvents.length === 0 ? (
-            <div className="py-16 text-center text-muted-foreground">
-              <CalendarDays className="mx-auto h-10 w-10 mb-2 opacity-50" />
-              <p className="text-lg font-medium">Ei tulevia tapahtumia</p>
-              <p className="text-sm mt-1">Luo ensimmäinen tapahtuma!</p>
+            <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+              <span className="text-6xl mb-4">📅</span>
+              <h3 className="text-lg font-semibold text-foreground">Ei tapahtumia</h3>
+              <p className="text-sm text-muted-foreground mt-1 max-w-xs">Luo ensimmäinen tapahtuma naapurustolle!</p>
             </div>
           ) : (
             <div className="space-y-3">

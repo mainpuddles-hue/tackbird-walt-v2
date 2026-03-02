@@ -10,6 +10,7 @@ import { formatTimeAgo } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/supabase/client'
 import { toast } from 'sonner'
+import { SkeletonMessage } from '@/components/skeleton-card'
 import type { Profile } from '@/lib/types'
 
 interface EnrichedConversation {
@@ -92,15 +93,15 @@ export function MessagesClient({ conversations, currentUserId }: MessagesClientP
       </div>
 
       {visibleConversations.length === 0 ? (
-        <div className="py-16 text-center text-muted-foreground">
-          <MessageCircle className="mx-auto h-10 w-10 mb-2 opacity-50" />
-          <p className="text-lg font-medium">
-            {showArchived ? 'Ei arkistoituja keskusteluja' : 'Ei keskusteluja'}
-          </p>
-          <p className="text-sm mt-1">
+        <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+          <span className="text-6xl mb-4">💬</span>
+          <h3 className="text-lg font-semibold text-foreground">
+            {showArchived ? 'Ei arkistoituja keskusteluja' : 'Ei viestejä'}
+          </h3>
+          <p className="text-sm text-muted-foreground mt-1 max-w-xs">
             {showArchived
               ? 'Arkistoidut keskustelut ilmestyvät tähän'
-              : 'Viestit ilmestyvät tähän kun aloitat keskustelun'}
+              : 'Aloita keskustelu vastaamalla johonkin ilmoitukseen.'}
           </p>
         </div>
       ) : (

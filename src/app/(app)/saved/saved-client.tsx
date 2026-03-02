@@ -23,9 +23,10 @@ export function SavedClient({ posts }: SavedClientProps) {
       </div>
 
       {posts.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-muted-foreground">
-          <Bookmark className="h-12 w-12 mb-4 opacity-30" />
-          <p className="text-sm">Ei tallennettuja ilmoituksia</p>
+        <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+          <span className="text-6xl mb-4">🔖</span>
+          <h3 className="text-lg font-semibold text-foreground">Ei tallennettuja</h3>
+          <p className="text-sm text-muted-foreground mt-1 max-w-xs">Tallenna kiinnostavia ilmoituksia sydän-kuvakkeesta.</p>
         </div>
       ) : (
         <div className="space-y-3">

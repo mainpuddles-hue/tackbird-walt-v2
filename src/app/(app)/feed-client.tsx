@@ -1,13 +1,15 @@
 'use client'
 
-import { useState, useEffect, useRef, useCallback } from 'react'
+import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { PostCard } from '@/components/post-card'
 import { AdCard } from '@/components/ad-card'
 import { FilterBar } from '@/components/filter-bar'
 import { SwipeCards } from '@/components/swipe-cards'
-import { Loader2, RefreshCw, Layers, CreditCard } from 'lucide-react'
+import { SkeletonList } from '@/components/skeleton-card'
+import { Loader2, RefreshCw, Layers, CreditCard, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useI18n } from '@/lib/i18n'
 import type { Post, PostType } from '@/lib/types'
@@ -235,6 +237,17 @@ export function FeedClient({ initialPosts }: FeedClientProps) {
         onFilterChange={setActiveFilter}
       />
 
+      {/* Hero banner */}
+      {!activeFilter && filteredPosts.length > 0 && (
+        <div className="rounded-2xl bg-primary p-5 text-white mb-4">
+          <h2 className="text-lg font-bold mb-1">Tarvitsetko apua?</h2>
+          <p className="text-sm text-white/80 mb-3">Naapurit auttavat! Luo ilmoitus ja saat apua läheltä.</p>
+          <Link href="/create" className="inline-flex items-center gap-1.5 rounded-full bg-white text-primary px-4 py-2 text-sm font-medium hover:bg-white/90 transition-colors">
+            Luo ilmoitus <ChevronRight className="h-4 w-4" />
+          </Link>
+        </div>
+      )}
+
       {/* Swipe mode toggle (shown for ilmaista filter) */}
       {activeFilter === 'ilmaista' && filteredPosts.length > 0 && (
         <div className="flex justify-end">
@@ -282,39 +295,46 @@ export function FeedClient({ initialPosts }: FeedClientProps) {
             }}
           />
         </div>
+      ) : filteredPosts.length === 0 && loading ? (
+        <SkeletonList count={4} />
       ) : filteredPosts.length === 0 && !loading ? (
-        <div className="py-16 text-center text-muted-foreground">
-          <p className="text-lg font-medium">{t('feed.noPosts')}</p>
-          <p className="text-sm mt-1">{t('feed.noPostsHint')}</p>
+        <div className="flex flex-col items-center justify-center py-20 px-6 text-center">
+          <span className="text-6xl mb-4">📦</span>
+          <h3 className="text-lg font-semibold text-foreground">{t('feed.noPosts')}</h3>
+          <p className="text-sm text-muted-foreground mt-1 max-w-xs">{t('feed.noPostsHint')}</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {filteredPosts.map((post, index) => (
-            <div
-              key={post.id}
-              className={`animate-card-in ${index < 10 ? `stagger-${index + 1}` : ''}`}
-            >
-              <PostCard post={post} />
-              {/* Interleave ad after every 5th post */}
-              {ads.length > 0 &&
-                (index + 1) % 5 === 0 &&
-                ads[Math.floor(index / 5) % ads.length] && (
-                  <div className="mt-3">
-                    <AdCard
-                      ad={ads[Math.floor(index / 5) % ads.length]}
-                      onImpression={handleAdImpression}
-                      onClick={handleAdClick}
-                    />
-                  </div>
-                )}
-            </div>
-          ))}
-        </div>
+        <>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-bold">Uusimmat ilmoitukset</h2>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {filteredPosts.map((post, index) => (
+              <React.Fragment key={post.id}>
+                <div className={`animate-card-in ${index < 10 ? `stagger-${index + 1}` : ''}`}>
+                  <PostCard post={post} />
+                </div>
+                {/* Interleave ad after every 5th post — spans both columns */}
+                {ads.length > 0 &&
+                  (index + 1) % 5 === 0 &&
+                  ads[Math.floor(index / 5) % ads.length] && (
+                    <div className="col-span-2">
+                      <AdCard
+                        ad={ads[Math.floor(index / 5) % ads.length]}
+                        onImpression={handleAdImpression}
+                        onClick={handleAdClick}
+                      />
+                    </div>
+                  )}
+              </React.Fragment>
+            ))}
+          </div>
+        </>
       )}
 
       {/* Infinite scroll trigger */}
       <div ref={observerRef} className="h-4" />
-      {loading && (
+      {loading && filteredPosts.length > 0 && (
         <div className="flex justify-center py-4">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </div>

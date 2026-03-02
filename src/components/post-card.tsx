@@ -3,9 +3,7 @@
 import { useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { MapPin, Clock, Crown, ImageIcon, ChevronRight, BookOpen, CalendarCheck, Zap, TrendingUp, BadgeCheck, CreditCard } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+import { MapPin, Clock, Crown, ImageIcon, Heart, TrendingUp, BadgeCheck } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { CATEGORIES } from '@/lib/constants'
 import { cn } from '@/lib/utils'
@@ -13,177 +11,234 @@ import { formatTimeAgo, formatPrice } from '@/lib/format'
 import { useTheme } from 'next-themes'
 import type { Post, PostType } from '@/lib/types'
 
-const ctaConfig: Record<string, { label: string; icon: typeof ChevronRight }> = {
-  tarvitsen: { label: 'Katso ilmoitus', icon: ChevronRight },
-  tarjoan: { label: 'Katso ilmoitus', icon: ChevronRight },
-  ilmaista: { label: 'Katso ilmoitus', icon: ChevronRight },
-  tilannehuone: { label: 'Katso ilmoitus', icon: ChevronRight },
-  lainaa: { label: 'Katso lainaehdot', icon: BookOpen },
-  tapahtuma: { label: 'Katso tapahtuma', icon: CalendarCheck },
-  nappaa: { label: 'Nappaa!', icon: Zap },
-}
-
 interface PostCardProps {
   post: Post
 }
 
 export function PostCard({ post }: PostCardProps) {
   const [imgLoaded, setImgLoaded] = useState(false)
+  const [saved, setSaved] = useState(post.is_saved ?? false)
   const { resolvedTheme } = useTheme()
   const category = CATEGORIES[post.type as PostType]
   const isPro = post.is_pro_listing
   const user = post.user
   const isDark = resolvedTheme === 'dark'
-  const cta = ctaConfig[post.type as string] ?? ctaConfig.tarvitsen
 
   return (
     <Link href={`/post/${post.id}`}>
-      <Card
+      <div
         className={cn(
-          'relative overflow-hidden border-0 rounded-2xl shadow-[0_1px_3px_rgba(45,80,67,0.06),0_1px_2px_rgba(0,0,0,0.03)] transition-all duration-150 ease-in-out',
-          'hover:shadow-[0_2px_8px_rgba(45,80,67,0.10)]',
+          'rounded-2xl border-0 bg-card shadow-sm overflow-hidden transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5',
           isPro && 'ring-1 ring-amber-400/40'
         )}
         style={isPro ? {
           backgroundColor: isDark ? 'rgba(217,165,50,0.06)' : 'rgba(217,165,50,0.04)',
         } : undefined}
       >
-        {/* Left accent bar — TackBird signature */}
-        <div
-          className="absolute left-0 top-0 bottom-0 w-[3px] rounded-l-2xl"
-          style={{ backgroundColor: category?.color ?? '#888' }}
-        />
-
-        <CardContent className="p-4 pl-5">
-          {/* Header: avatar + name + time */}
-          <div className="flex items-center gap-3 mb-3">
-            <Avatar className="h-9 w-9">
-              {user?.avatar_url && (
-                <AvatarImage src={user.avatar_url} alt={user.name} />
+        {/* Image */}
+        {post.image_url ? (
+          <div className="relative aspect-[4/3] bg-muted">
+            {!imgLoaded && (
+              <div className="absolute inset-0 animate-pulse bg-muted" />
+            )}
+            <Image
+              src={post.image_url}
+              alt={post.title}
+              fill
+              className={cn(
+                'object-cover transition-opacity duration-300',
+                imgLoaded ? 'opacity-100' : 'opacity-0'
               )}
-              <AvatarFallback className="text-xs">
-                {user?.name?.charAt(0)?.toUpperCase() ?? '?'}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-1.5">
-                <span
-                  className="truncate text-sm font-medium hover:underline"
-                  onClick={(e) => {
-                    if (user?.id) {
-                      e.preventDefault()
-                      e.stopPropagation()
-                      window.location.href = `/profile/${user.id}`
-                    }
-                  }}
-                >
-                  {user?.name ?? 'Käyttäjä'}
-                </span>
-                {isPro && <Crown className="h-3.5 w-3.5 text-amber-500" />}
-              </div>
-              <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                {user?.naapurusto && (
-                  <>
-                    <MapPin className="h-3 w-3" />
-                    <span>{user.naapurusto}</span>
-                    <span>·</span>
-                  </>
+              onLoad={() => setImgLoaded(true)}
+              sizes="(max-width: 448px) 100vw, 448px"
+            />
+
+            {/* Image count badge */}
+            {post.images && post.images.length > 0 && (
+              <span className="absolute bottom-2 left-2 flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white">
+                <ImageIcon className="h-3 w-3" />
+                {post.images.length + 1}
+              </span>
+            )}
+
+            {/* Heart / bookmark button */}
+            <button
+              className={cn(
+                'absolute top-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm shadow-sm transition-all duration-150 hover:bg-white hover:scale-110',
+                saved && 'bg-white'
+              )}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setSaved(!saved)
+              }}
+              aria-label={saved ? 'Poista tallennus' : 'Tallenna'}
+            >
+              <Heart
+                className={cn(
+                  'h-4 w-4 transition-colors duration-150',
+                  saved
+                    ? 'fill-red-500 text-red-500'
+                    : 'text-gray-600'
                 )}
-                <Clock className="h-3 w-3" />
-                <span>{formatTimeAgo(post.created_at)}</span>
+              />
+            </button>
+
+            {/* Price overlay for lainaa */}
+            {post.type === 'lainaa' && post.daily_fee != null && (
+              <div className="absolute bottom-2 right-2 rounded-lg bg-white/90 backdrop-blur-sm px-2.5 py-1 shadow-sm">
+                <span className="text-sm font-semibold text-foreground">
+                  {formatPrice(post.daily_fee)}
+                </span>
+                <span className="text-xs text-muted-foreground"> / pv</span>
               </div>
-            </div>
-            <Badge
-              variant="secondary"
-              className="shrink-0 text-[10px]"
+            )}
+
+            {/* Pro badge on image */}
+            {isPro && (
+              <div className="absolute top-2.5 left-2.5 flex items-center gap-1 rounded-full bg-amber-500/90 backdrop-blur-sm px-2 py-0.5 shadow-sm">
+                <Crown className="h-3 w-3 text-white" />
+                <span className="text-[10px] font-semibold text-white">PRO</span>
+              </div>
+            )}
+          </div>
+        ) : (
+          /* No image — show a compact muted placeholder area */
+          <div className="relative aspect-[4/3] bg-muted flex items-center justify-center">
+            <ImageIcon className="h-10 w-10 text-muted-foreground/30" />
+
+            {/* Heart button even without image */}
+            <button
+              className={cn(
+                'absolute top-2.5 right-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 backdrop-blur-sm shadow-sm transition-all duration-150 hover:bg-white hover:scale-110',
+                saved && 'bg-white'
+              )}
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                setSaved(!saved)
+              }}
+              aria-label={saved ? 'Poista tallennus' : 'Tallenna'}
+            >
+              <Heart
+                className={cn(
+                  'h-4 w-4 transition-colors duration-150',
+                  saved
+                    ? 'fill-red-500 text-red-500'
+                    : 'text-gray-600'
+                )}
+              />
+            </button>
+
+            {/* Price overlay for lainaa even without image */}
+            {post.type === 'lainaa' && post.daily_fee != null && (
+              <div className="absolute bottom-2 right-2 rounded-lg bg-white/90 backdrop-blur-sm px-2.5 py-1 shadow-sm">
+                <span className="text-sm font-semibold text-foreground">
+                  {formatPrice(post.daily_fee)}
+                </span>
+                <span className="text-xs text-muted-foreground"> / pv</span>
+              </div>
+            )}
+
+            {/* Pro badge */}
+            {isPro && (
+              <div className="absolute top-2.5 left-2.5 flex items-center gap-1 rounded-full bg-amber-500/90 backdrop-blur-sm px-2 py-0.5 shadow-sm">
+                <Crown className="h-3 w-3 text-white" />
+                <span className="text-[10px] font-semibold text-white">PRO</span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Content area */}
+        <div className="p-3.5">
+          {/* Category badge + Pro indicators */}
+          <div className="flex items-center gap-1.5 mb-2">
+            <span
+              className="rounded-full px-2.5 py-0.5 text-[11px] font-medium"
               style={{
-                backgroundColor: `${category?.color}15`,
+                backgroundColor: `${category?.color}26`,
                 color: category?.color,
               }}
             >
               {category?.label}
-            </Badge>
-          </div>
+            </span>
 
-          {/* Pro badges */}
-          {isPro && (
-            <div className="flex gap-1.5 mb-2">
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-                <TrendingUp className="h-3 w-3" /> Nostettu
-              </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
-                <BadgeCheck className="h-3 w-3" /> Vahvistettu taitaja
-              </span>
-            </div>
-          )}
+            {isPro && (
+              <>
+                <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                  <TrendingUp className="h-2.5 w-2.5" /> Nostettu
+                </span>
+                <span className="inline-flex items-center gap-0.5 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                  <BadgeCheck className="h-2.5 w-2.5" /> Vahvistettu
+                </span>
+              </>
+            )}
+          </div>
 
           {/* Title */}
-          <h3 className="font-semibold leading-snug mb-1">{post.title}</h3>
+          <h3 className="font-semibold text-[15px] leading-snug line-clamp-2 mb-1.5">
+            {post.title}
+          </h3>
 
-          {/* Description */}
-          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">
-            {post.description}
-          </p>
-
-          {/* Image */}
-          {post.image_url && (
-            <div className="relative mb-3 aspect-video overflow-hidden rounded-lg bg-muted">
-              {!imgLoaded && (
-                <div className="absolute inset-0 animate-pulse bg-muted" />
-              )}
-              <Image
-                src={post.image_url}
-                alt={post.title}
-                fill
-                className={cn(
-                  'object-cover transition-opacity duration-300',
-                  imgLoaded ? 'opacity-100' : 'opacity-0'
-                )}
-                onLoad={() => setImgLoaded(true)}
-                sizes="(max-width: 448px) 100vw, 448px"
-              />
-              {post.images && post.images.length > 0 && (
-                <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-medium text-white">
-                  <ImageIcon className="h-3 w-3" />
-                  {post.images.length + 1}
-                </span>
-              )}
+          {/* Location */}
+          {post.location && (
+            <div className="text-xs text-muted-foreground flex items-center gap-1 mb-3">
+              <MapPin className="h-3 w-3 shrink-0" />
+              <span className="truncate">{post.location}</span>
             </div>
           )}
 
-          {/* Footer: price, location, lainaa badge */}
-          <div className="flex items-center gap-2 text-xs text-muted-foreground mb-3">
-            {post.daily_fee != null && (
-              <span className="font-medium text-foreground">
-                {formatPrice(post.daily_fee)} / pv
-              </span>
-            )}
-            {post.type === 'lainaa' && post.daily_fee != null && (
-              <span className="inline-flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
-                <CreditCard className="h-3 w-3" /> Maksu sovelluksessa
-              </span>
-            )}
-            {post.location && (
-              <span className="flex items-center gap-1">
-                <MapPin className="h-3 w-3" />
-                {post.location}
-              </span>
-            )}
-          </div>
+          {/* Price row for lainaa (non-image fallback inline) */}
+          {post.type === 'lainaa' && post.daily_fee != null && !post.image_url && (
+            <div className="text-sm font-semibold text-foreground mb-3">
+              {formatPrice(post.daily_fee)}
+              <span className="text-xs font-normal text-muted-foreground"> / pv</span>
+            </div>
+          )}
 
-          {/* CTA button */}
-          <div
-            className="flex items-center justify-center gap-1.5 rounded py-2 text-xs font-medium transition-all duration-150 hover:opacity-80"
-            style={{
-              backgroundColor: `${category?.color}12`,
-              color: category?.color,
-            }}
-          >
-            <cta.icon className="h-3.5 w-3.5" />
-            {cta.label}
+          {/* Divider */}
+          <div className="border-t border-border/50 pt-2.5">
+            {/* User row */}
+            <div className="flex items-center gap-2">
+              <Avatar
+                className="h-6 w-6 cursor-pointer"
+                onClick={(e: React.MouseEvent) => {
+                  if (user?.id) {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    window.location.href = `/profile/${user.id}`
+                  }
+                }}
+              >
+                {user?.avatar_url && (
+                  <AvatarImage src={user.avatar_url} alt={user.name} />
+                )}
+                <AvatarFallback className="text-[10px]">
+                  {user?.name?.charAt(0)?.toUpperCase() ?? '?'}
+                </AvatarFallback>
+              </Avatar>
+              <span
+                className="text-xs text-muted-foreground truncate hover:underline cursor-pointer"
+                onClick={(e) => {
+                  if (user?.id) {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    window.location.href = `/profile/${user.id}`
+                  }
+                }}
+              >
+                {user?.name ?? 'Kayttaja'}
+              </span>
+              <span className="text-muted-foreground/40 text-xs">·</span>
+              <span className="flex items-center gap-1 text-xs text-muted-foreground/60">
+                <Clock className="h-3 w-3" />
+                {formatTimeAgo(post.created_at)}
+              </span>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </Link>
   )
 }

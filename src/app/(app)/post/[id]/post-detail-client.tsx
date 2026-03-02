@@ -40,6 +40,7 @@ import {
 import { CATEGORIES } from '@/lib/constants'
 import { formatTimeAgo, formatPrice, formatResponseRate, formatEventDate } from '@/lib/format'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import type { Post, PostType, Review } from '@/lib/types'
 
 interface PostDetailClientProps {
@@ -78,6 +79,14 @@ export function PostDetailClient({
   const [bookingEnd, setBookingEnd] = useState('')
   const [bookingSaving, setBookingSaving] = useState(false)
   const [lightboxImg, setLightboxImg] = useState<string | null>(null)
+  const [confirmOpen, setConfirmOpen] = useState(false)
+  const [confirmConfig, setConfirmConfig] = useState<{
+    title: string
+    description?: string
+    variant?: 'default' | 'destructive'
+    confirmLabel?: string
+    action: () => void | Promise<void>
+  }>({ title: '', action: () => {} })
   const router = useRouter()
   const supabase = createClient()
   const category = CATEGORIES[post.type as PostType]
@@ -205,18 +214,8 @@ export function PostDetailClient({
     }
   }
 
-  async function handleToggleBlock() {
-    if (!currentUserId) {
-      toast.error('Kirjaudu sisään estääksesi käyttäjän')
-      return
-    }
-    if (blockLoading) return
-    if (!blocked) {
-      const confirmed = window.confirm(
-        `Haluatko varmasti estää käyttäjän ${user?.name ?? ''}? Et näe hänen ilmoituksiaan etkä voi viestiä hänen kanssaan.`
-      )
-      if (!confirmed) return
-    }
+  async function executeBlock() {
+    if (!currentUserId) return
     setBlockLoading(true)
     try {
       if (blocked) {
@@ -241,6 +240,26 @@ export function PostDetailClient({
     } finally {
       setBlockLoading(false)
     }
+  }
+
+  function handleToggleBlock() {
+    if (!currentUserId) {
+      toast.error('Kirjaudu sisään estääksesi käyttäjän')
+      return
+    }
+    if (blockLoading) return
+    if (!blocked) {
+      setConfirmConfig({
+        title: 'Estä käyttäjä',
+        description: `Haluatko varmasti estää käyttäjän ${user?.name ?? ''}? Et näe hänen ilmoituksiaan etkä voi viestiä hänen kanssaan.`,
+        variant: 'destructive',
+        confirmLabel: 'Estä',
+        action: executeBlock,
+      })
+      setConfirmOpen(true)
+      return
+    }
+    executeBlock()
   }
 
   async function handleSubmitReview() {
@@ -604,19 +623,27 @@ export function PostDetailClient({
             <Button
               variant="ghost"
               className="w-full text-destructive hover:text-destructive"
-              onClick={async () => {
-                if (!confirm('Haluatko varmasti poistaa tämän ilmoituksen?')) return
-                setDeleting(true)
-                try {
-                  await supabase.from('posts').update({ is_active: false }).eq('id', post.id)
-                  toast.success('Ilmoitus poistettu')
-                  router.push('/')
-                  router.refresh()
-                } catch {
-                  toast.error('Poistaminen epäonnistui')
-                } finally {
-                  setDeleting(false)
-                }
+              onClick={() => {
+                setConfirmConfig({
+                  title: 'Poista ilmoitus',
+                  description: 'Haluatko varmasti poistaa tämän ilmoituksen?',
+                  variant: 'destructive',
+                  confirmLabel: 'Poista',
+                  action: async () => {
+                    setDeleting(true)
+                    try {
+                      await supabase.from('posts').update({ is_active: false }).eq('id', post.id)
+                      toast.success('Ilmoitus poistettu')
+                      router.push('/')
+                      router.refresh()
+                    } catch {
+                      toast.error('Poistaminen epäonnistui')
+                    } finally {
+                      setDeleting(false)
+                    }
+                  },
+                })
+                setConfirmOpen(true)
               }}
               disabled={deleting}
             >
@@ -812,6 +839,20 @@ export function PostDetailClient({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Confirm dialog (replaces window.confirm) */}
+      <ConfirmDialog
+        open={confirmOpen}
+        onOpenChange={setConfirmOpen}
+        title={confirmConfig.title}
+        description={confirmConfig.description}
+        variant={confirmConfig.variant}
+        confirmLabel={confirmConfig.confirmLabel}
+        onConfirm={async () => {
+          setConfirmOpen(false)
+          await confirmConfig.action()
+        }}
+      />
     </div>
   )
 }

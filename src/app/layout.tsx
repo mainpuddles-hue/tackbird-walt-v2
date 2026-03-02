@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { Roboto } from 'next/font/google'
 import { Providers } from '@/components/providers'
 import './globals.css'
 
-const inter = Inter({
-  variable: '--font-inter',
+const roboto = Roboto({
+  variable: '--font-roboto',
   subsets: ['latin'],
+  weight: ['300', '400', '500', '700'],
   display: 'swap',
 })
 
@@ -24,8 +25,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#F5F0E8' },
-    { media: '(prefers-color-scheme: dark)', color: '#1A2E28' },
+    { media: '(prefers-color-scheme: light)', color: '#F5F5F5' },
+    { media: '(prefers-color-scheme: dark)', color: '#121212' },
   ],
 }
 
@@ -37,7 +38,7 @@ export default function RootLayout({
   return (
     <html lang="fi" suppressHydrationWarning>
       <body
-        className={`${inter.variable} font-sans antialiased`}
+        className={`${roboto.variable} font-sans antialiased`}
       >
         <Providers>{children}</Providers>
       </body>

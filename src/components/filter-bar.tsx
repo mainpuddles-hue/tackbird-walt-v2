@@ -21,14 +21,14 @@ interface FilterBarProps {
 
 export function FilterBar({ activeFilter, onFilterChange }: FilterBarProps) {
   return (
-    <div className="flex gap-2.5 overflow-x-auto pb-3 scrollbar-hide">
+    <div className="flex gap-2 overflow-x-auto pb-3 scrollbar-hide">
       <button
         onClick={() => onFilterChange(null)}
         className={cn(
-          'shrink-0 rounded-full px-4 py-2.5 text-sm font-semibold transition-all inline-flex items-center gap-1.5 shadow-sm',
+          'shrink-0 inline-flex items-center gap-1.5 transition-all duration-200',
           !activeFilter
-            ? 'bg-primary text-primary-foreground shadow-md scale-[1.02]'
-            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+            ? 'bg-primary text-white rounded-full px-5 py-2.5 text-sm font-medium shadow-md'
+            : 'bg-card text-foreground border border-border rounded-full px-5 py-2.5 text-sm font-normal hover:bg-primary/10'
         )}
       >
         <LayoutGrid className="h-4 w-4" />
@@ -44,10 +44,10 @@ export function FilterBar({ activeFilter, onFilterChange }: FilterBarProps) {
                 onFilterChange(activeFilter === type ? null : type)
               }
               className={cn(
-                'shrink-0 rounded-full px-4 py-2.5 text-sm font-semibold transition-all inline-flex items-center gap-1.5 shadow-sm',
+                'shrink-0 inline-flex items-center gap-1.5 transition-all duration-200',
                 activeFilter === type
-                  ? 'text-white shadow-md scale-[1.02]'
-                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                  ? 'text-white rounded-full px-5 py-2.5 text-sm font-medium shadow-md'
+                  : 'bg-card text-foreground border border-border rounded-full px-5 py-2.5 text-sm font-normal hover:bg-primary/10'
               )}
               style={
                 activeFilter === type

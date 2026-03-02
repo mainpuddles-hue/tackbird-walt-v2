@@ -54,7 +54,7 @@ export function Header() {
   }, [supabase])
 
   return (
-    <header className="sticky top-0 z-40 border-b border-[var(--color-border)] bg-[var(--color-card)]">
+    <header className="sticky top-0 z-40 bg-card/95 backdrop-blur-xl shadow-sm">
       <div className="mx-auto flex h-14 max-w-md items-center justify-between px-4">
         <Link href="/" className="flex items-center gap-2">
           <TackBirdLogo size={24} className="text-foreground" />
@@ -78,7 +78,7 @@ export function Header() {
             <Link href="/notifications">
               <Bell className="h-[18px] w-[18px] text-[var(--color-muted-foreground)]" strokeWidth={1.5} />
               {unreadCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#D4956B] px-1 text-[10px] font-medium text-white">
+                <span className="absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-medium text-white animate-badge-bounce">
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
